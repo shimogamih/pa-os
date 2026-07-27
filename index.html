@@ -2,24 +2,94 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>PA-OS</title>
 
 <style>
-body{
-    background:#111;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-    padding-top:100px;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
-button{
-    font-size:28px;
-    padding:20px 50px;
-    border:none;
-    border-radius:15px;
-    background:#3a86ff;
-    color:white;
+body{
+background:#111827;
+color:white;
+}
+
+header{
+background:#1f2937;
+padding:20px;
+text-align:center;
+font-size:32px;
+font-weight:bold;
+box-shadow:0 3px 10px rgba(0,0,0,.4);
+}
+
+.subtitle{
+color:#9ca3af;
+font-size:14px;
+margin-top:6px;
+}
+
+.container{
+padding:18px;
+}
+
+.card{
+background:#1f2937;
+border-radius:18px;
+padding:18px;
+margin-bottom:18px;
+box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+
+.title{
+font-size:22px;
+margin-bottom:12px;
+}
+
+.value{
+font-size:34px;
+font-weight:bold;
+color:#4ade80;
+}
+
+.guild{
+font-size:28px;
+text-align:center;
+margin:12px 0;
+}
+
+.rank{
+text-align:center;
+font-size:18px;
+color:#facc15;
+}
+
+.button{
+display:block;
+width:100%;
+padding:16px;
+margin-top:15px;
+font-size:18px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:12px;
+}
+
+.button:active{
+background:#1d4ed8;
+}
+
+.footer{
+text-align:center;
+padding:25px;
+color:#888;
+font-size:13px;
 }
 </style>
 
@@ -27,13 +97,92 @@ button{
 
 <body>
 
-<h1>PA-OS 起動成功！</h1>
+<header>
 
-<p>Portfolio AI Operating System</p>
+PA-OS
 
-<button onclick="alert('成功！PA-OSが動いています！')">
-起動
+<div class="subtitle">
+Portfolio AI Operating System
+</div>
+
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<div class="title">
+🏰 ギルド
+</div>
+
+<div class="guild">
+Blue Phoenix
+</div>
+
+<div class="rank">
+★★★★★
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="title">
+💰 総資産
+</div>
+
+<div class="value">
+¥0
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="title">
+⚔ パーティー評価
+</div>
+
+<div style="font-size:24px">
+Sランク
+</div>
+
+<div style="margin-top:10px;color:#9ca3af">
+バランスの良いポートフォリオです
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="title">
+📜 今日の作戦
+</div>
+
+<div style="line-height:1.8">
+
+・押し目候補を監視<br>
+・配当銘柄を強化<br>
+・AI分析を実行
+
+</div>
+
+</div>
+
+<button class="button"
+onclick="alert('Portfolio AI 起動予定')">
+
+🚀 Portfolio AI 起動
+
 </button>
+
+</div>
+
+<div class="footer">
+
+PA-OS v0.1
+
+</div>
 
 </body>
 </html>
