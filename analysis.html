@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>ポートフォリオAI 分析</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="branding"><h1>ポートフォリオAI 分析</h1></div>
+</header>
+<main class="container">
+  <section class="card">
+    <div class="card-header"><h2>分析レポート</h2></div>
+    <div class="card-body">
+      <pre id="aiReport" style="white-space:pre-wrap;color:#e6e7eb"></pre>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-body">
+      <button id="backBtn" class="start-btn">ダッシュボードに戻る</button>
+    </div>
+  </section>
+</main>
+<script>
+// Read report from sessionStorage
+const report = sessionStorage.getItem('paos_ai_report');
+const el = document.getElementById('aiReport');
+if(report){
+  try{ el.textContent = JSON.parse(report).join('\n\n'); }
+  catch(e){ el.textContent = report; }
+} else {
+  el.textContent = '分析データが見つかりません。ダッシュボードでPortfolio AIを実行してください。';
+}
+document.getElementById('backBtn').addEventListener('click', ()=>{ window.location.href = './index.html'; });
+</script>
+</body>
+</html>

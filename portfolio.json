@@ -1,0 +1,31 @@
+{
+  "guild": {
+    "name": "ブルー・フェニックス",
+    "rank": 5
+  },
+  "master": {
+    "name": "セレナ",
+    "level": 50,
+    "leadership": "S"
+  },
+  "portfolio": {
+    "cash": 500000,
+    "totalAssets": 0,
+    "dailyProfit": 0,
+    "rank": 12,
+    "dividendIncome": 12400,
+    "risk": 32,
+    "missions": [
+      { "id": "m1", "text": "押し目候補を監視", "done": false },
+      { "id": "m2", "text": "配当強化", "done": false },
+      { "id": "m3", "text": "AI分析開始", "done": false }
+    ]
+  },
+  "members": [
+    { "name": "オルカン", "job": "Tank", "level": 18, "value": 1200000, "pnl": 48200, "dividendRank": "A", "growthRank": "B" },
+    { "name": "日本精工", "job": "Attacker", "level": 12, "value": 740000, "pnl": -4300, "dividendRank": "B", "growthRank": "C" },
+    { "name": "アドソル日進", "job": "Support", "level": 10, "value": 420000, "pnl": 7400, "dividendRank": "B", "growthRank": "B" },
+    { "name": "Apple", "job": "Legendary", "level": 28, "value": 2340000, "pnl": 120000, "dividendRank": "A", "growthRank": "A" },
+    { "name": "SpaceX", "job": "Sniper", "level": 22, "value": 1800000, "pnl": 95000, "dividendRank": "C", "growthRank": "A" }
+  ]
+}
