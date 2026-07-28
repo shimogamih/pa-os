@@ -1,1 +1,110 @@
-
+/* style.css — Dark Fantasy Portfolio AI Dashboard
+   Mobile-first, responsive, animated cards, beautiful dark fantasy UI
+*/
+:root{
+  --bg:#0b0b10;
+  --panel:#0f1115;
+  --muted:rgba(255,255,255,0.6);
+  --accent1:#9b6ef0;
+  --accent2:#2dd4bf;
+  --glass: rgba(255,255,255,0.03);
+  --card-shadow: 0 8px 30px rgba(2,6,23,0.6);
+  --glass-border: rgba(255,255,255,0.04);
+  --radius:14px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(155,110,240,0.06), transparent),
+              radial-gradient(900px 400px at 90% 90%, rgba(45,212,191,0.03), transparent),
+              var(--bg);
+  color:#e6e7eb;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.35;
+  padding-bottom:64px;
+  position:relative;
+  overflow-x:hidden;
+}
+/* subtle parchment noise using SVG data URI */
+.bg-orbit{
+  position:fixed;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:0.6;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;padding:20px 18px;border-bottom:1px solid rgba(255,255,255,0.02);
+}
+.branding{display:flex;gap:12px;align-items:center}
+.branding h1{font-family:Cinzel,serif;margin:0;font-size:1.05rem;letter-spacing:1px}
+.sub{font-size:0.75rem;color:var(--muted);margin-top:2px}
+.crest svg{width:52px;height:52px}
+.start-btn{
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  color:#061018;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(46,35,71,0.35);
+}
+.start-btn:active{transform:translateY(1px)}
+.container{padding:18px;max-width:1100px;margin:0 auto}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:14px;box-shadow:var(--card-shadow);overflow:hidden;position:relative;backdrop-filter:blur(6px);
+  transform-origin:center;transition:transform .6s cubic-bezier(.2,.9,.3,1),box-shadow .3s;
+}
+.card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.18));mix-blend-mode:multiply;border-radius:inherit;opacity:0.9}
+.card:hover{transform:translateY(-8px) scale(1.01);box-shadow:0 20px 50px rgba(2,6,23,0.7)}
+.card-header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card-header h2{margin:0;font-size:1rem;font-weight:700}
+.card-header small{color:var(--muted);font-size:0.8rem}
+.card-body{margin-top:10px}
+.guild-list{display:flex;align-items:center;gap:10px}
+.guild-list .member{display:flex;gap:10px;align-items:center}
+.avatar{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#07111a}
+.member .meta{display:flex;flex-direction:column}
+.member .meta span{color:var(--muted);font-size:0.85rem}
+.member.more{color:var(--muted);font-size:0.9rem}
+.assets{display:flex;align-items:baseline;gap:12px}
+.assets .amount{font-size:1.3rem;font-weight:800}
+.trend{color:var(--muted);font-weight:600}
+.trend.up{color:#7ef3b7}
+.bar{height:8px;background:linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));border-radius:8px;margin-top:12px;overflow:hidden}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));width:var(--p,50%);transition:width .9s cubic-bezier(.2,.9,.3,1)}
+.stats{display:flex;gap:10px;justify-content:space-between}
+.stats div{display:flex;flex-direction:column;align-items:center;padding:8px;background:rgba(255,255,255,0.02);border-radius:10px;width:30%}
+.radial{position:relative;margin-top:12px;display:flex;align-items:center;gap:10px}
+.radial svg{width:64px;height:64px}
+.radial .bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:5}
+.radial .meter{fill:none;stroke:linear-gradient(90deg,var(--accent1),var(--accent2));stroke-width:5;transform-origin:center;transform:rotate(-90deg);transition:stroke-dashoffset .9s}
+.radial-label{position:absolute;left:28px;top:20px;font-weight:700}
+.strategy-list{margin:0;padding:0;list-style:none}
+.strategy-list li{padding:8px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:8px}
+.controls{display:flex;flex-direction:column;gap:12px;padding:22px 0;align-items:center;text-align:center}
+.note{color:var(--muted)}
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(rgba(2,4,10,0.6),rgba(2,4,10,0.75));backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s}
+.modal[aria-hidden="false"]{opacity:1;pointer-events:auto}
+.modal-card{width:320px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.03)}
+.modal .close{background:none;border:none;color:var(--muted);font-size:18px;float:right;cursor:pointer}
+.modal .invoke{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));border:none;color:#061018;border-radius:10px;font-weight:700}
+.footer{position:fixed;left:0;right:0;bottom:10px;text-align:center;color:var(--muted);font-size:12px}
+/* Animations */
+[data-anim]{opacity:0;transform:translateY(18px) scale(.995) rotateX(6deg);transition:all .8s cubic-bezier(.2,.9,.3,1)}
+[data-anim].awake{opacity:1;transform:translateY(0) scale(1) rotateX(0)}
+/* Floating shimmer on cards */
+.card::before{content:"";position:absolute;inset:-40% -20% auto -20%;height:180px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);transform:skewX(-18deg);filter:blur(18px);opacity:0;transition:opacity .6s}
+.card:hover::before{opacity:1}
+/* Responsive */
+@media(min-width:720px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .card{min-height:120px}
+}
+@media(min-width:1080px){
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .card{min-height:140px}
+}
+/* Dark fantasy decorative touches */
+body:after{content:"";position:fixed;bottom:-30px;left:-30px;width:200px;height:200px;background:radial-gradient(circle at 30% 30%, rgba(155,110,240,0.04), transparent), radial-gradient(circle at 70% 70%, rgba(45,212,191,0.03), transparent);pointer-events:none}
+/* Utility */
+.muted{color:var(--muted)}
