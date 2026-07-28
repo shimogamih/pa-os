@@ -22,8 +22,9 @@
 .hold-meta{display:flex;justify-content:space-between;gap:8px}
 .bottom-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .btn{background:linear-gradient(135deg,var(--accent1),var(--accent2));padding:10px 12px;border-radius:10px;color:#061018;border:none;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
 /* Recommendation badges */
-.badge{display:inline-block;padding:6px 8px;border-radius:999px;font-weight:700;color:#061018;margin-left:8px}
+.badge{display:inline-block;padding:6px 8px;border-radius:999px;font-weight:700;color:#061018;margin-left:8px;font-size:0.86rem}
 .badge.buy{background:#34d399} /* green */
 .badge.hold{background:#fbbf24} /* yellow */
 .badge.watch{background:#fb923c} /* orange */
@@ -32,6 +33,22 @@
 .ai-analysis{margin-bottom:12px}
 .ai-diagnosis{margin-top:8px;color:var(--muted);white-space:pre-line}
 .holding-comment{padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:8px}
+/* New small components */
+.risk-score{display:flex;gap:8px;align-items:center}
+.risk-pill{padding:6px 10px;border-radius:999px;font-weight:700;color:#061018}
+.risk-high{background:#fb7185}
+.risk-medium{background:#fbbf24}
+.risk-low{background:#34d399}
+.simulations-list{display:flex;flex-direction:column;gap:8px}
+.sim-card{padding:8px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
+.guild-comment{padding:10px;border-left:3px solid rgba(122,78,240,0.6);background:linear-gradient(90deg,rgba(122,78,240,0.02),transparent);border-radius:8px;color:var(--muted)}
+.mvp-badge{display:inline-block;padding:6px 10px;border-radius:8px;background:linear-gradient(135deg,#ffd54a,#ffb86b);color:#061018;font-weight:800;margin-left:8px}
+.small-muted{color:var(--muted);font-size:0.9rem;margin-top:6px}
+@media(min-width:720px){
+  .ai-analysis{display:flex;gap:12px;align-items:flex-start}
+  .ai-left{flex:1}
+  .ai-right{width:320px}
+}
 </style>
 </head>
 <body>
@@ -59,13 +76,40 @@
 
       <!-- AI総合分析 -->
       <div class="section ai-analysis">
-        <h3>「AI総合分析」</h3>
-        <div>
-          <strong>■ 総合評価</strong>
-          <div id="aiGrade" class="big-eval">—</div>
+        <div class="ai-left">
+          <h3>「AI総合分析」</h3>
+          <div>
+            <strong>■ 総合評価</strong>
+            <div id="aiGrade" class="big-eval">—</div>
+          </div>
+          <div style="margin-top:10px"><strong>■ ポートフォリオ診断</strong>
+            <div id="aiDiagnosis" class="ai-diagnosis">—</div>
+          </div>
+
+          <div class="rule"></div>
+
+          <h3>リスク分析</h3>
+          <div id="rRisk" class="small-muted">—</div>
+
+          <div class="rule"></div>
+
+          <h3>シミュレーション（3パターン）</h3>
+          <div id="rSimulations" class="simulations-list">
+            <!-- populated by JS -->
+          </div>
+
         </div>
-        <div style="margin-top:10px"><strong>■ ポートフォリオ診断</strong>
-          <div id="aiDiagnosis" class="ai-diagnosis">—</div>
+
+        <div class="ai-right">
+          <div class="section">
+            <h4>ギルドマスターのコメント</h4>
+            <div id="guildComment" class="guild-comment">—</div>
+          </div>
+
+          <div class="section" style="margin-top:10px">
+            <h4>Today's Strategy</h4>
+            <div id="rStrategyShort" class="small-muted">—</div>
+          </div>
         </div>
       </div>
 
@@ -104,12 +148,12 @@
 
       <div class="rule"></div>
       <div class="section">
-        <h3>今日の作戦</h3>
+        <h3>今日の作戦（詳細）</h3>
         <div id="rStrategy">
-          <div>・買い候補</div><div id="rBuy">—</div>
-          <div>・保有継続</div><div id="rHold">—</div>
-          <div>・注意銘柄</div><div id="rWatch">—</div>
-          <div>・利益確定候補</div><div id="rSell">—</div>
+          <div><strong>・買い候補</strong><div id="rBuy">—</div></div>
+          <div style="margin-top:8px"><strong>・保有継続</strong><div id="rHold">—</div></div>
+          <div style="margin-top:8px"><strong>・注意銘柄</strong><div id="rWatch">—</div></div>
+          <div style="margin-top:8px"><strong>・利益確定候補</strong><div id="rSell">—</div></div>
         </div>
       </div>
 
@@ -127,6 +171,12 @@
         <div id="holdingsList" class="hold-list"></div>
       </div>
 
+      <div class="rule"></div>
+      <div class="section">
+        <h3>MVP（主要銘柄）</h3>
+        <div id="rMvp" class="small-muted">—</div>
+      </div>
+
       <div class="bottom-actions">
         <button id="backBtn" class="btn">ダッシュボードに戻る</button>
       </div>
@@ -137,9 +187,11 @@
 </main>
 <script>
 (async function(){
-  const steps = Array.from(document.querySelectorAll('#steps li'));
+  function qs(sel){return document.querySelector(sel);} 
+  function qsa(sel){return Array.from(document.querySelectorAll(sel));}
+  const steps = qsa('#steps li');
   function markDone(stepKey){
-    const el = document.querySelector(`#steps li[data-step="${stepKey}"]`);
+    const el = qs(`#steps li[data-step="${stepKey}"]`);
     if(el) el.classList.add('done');
   }
   function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -148,7 +200,7 @@
   let report = null;
   try{ report = JSON.parse(sessionStorage.getItem('paos_ai_report_detailed')); } catch(e){ report = null; }
 
-  // If not available, try to request via opener
+  // If not available, try to request via opener (non-blocking)
   if(!report && window.opener && window.opener.paos && window.opener.paos.requestDetailedReport){
     try{ await window.opener.paos.requestDetailedReport(); report = JSON.parse(sessionStorage.getItem('paos_ai_report_detailed')); } catch(e){ report = null; }
   }
@@ -161,45 +213,104 @@
   }
 
   if(!report){
-    document.getElementById('loadingSection').querySelector('.card-body').innerHTML = '<div class="small">レポートが見つかりません。ダッシュボードからPortfolio AIを実行してください。</div>';
+    const body = qs('#loadingSection .card-body');
+    body.innerHTML = '<div class="small">レポートが見つかりません。ダッシュボードからPortfolio AIを実行してください。</div>';
     return;
   }
 
   // Render report
-  document.getElementById('loadingSection').style.display = 'none';
-  document.getElementById('reportSection').style.display = '';
+  qs('#loadingSection').style.display = 'none';
+  qs('#reportSection').style.display = '';
+
+  // Helper: safe text
+  function txt(id, value){ const el = qs('#' + id); if(!el) return; el.textContent = value != null ? value : '—'; }
 
   // AI総合分析
-  document.getElementById('aiGrade').textContent = report.aiAnalysis ? (report.aiAnalysis.grade || '—') : '—';
-  document.getElementById('aiDiagnosis').textContent = report.aiAnalysis ? (report.aiAnalysis.diagnosis || []).join('\n') : '—';
+  txt('aiGrade', report.aiAnalysis ? (report.aiAnalysis.grade || '—') : '—');
+  txt('aiDiagnosis', report.aiAnalysis ? ((report.aiAnalysis.diagnosis && report.aiAnalysis.diagnosis.length) ? report.aiAnalysis.diagnosis.join('\n') : '—') : '—');
 
   // Header values
-  document.getElementById('rTotalAssets').textContent = `¥${(report.totalAssets||0).toLocaleString()}`;
-  document.getElementById('rDailyPnl').textContent = report.dailyPnl || '—';
-  document.getElementById('rHoldingsCount').textContent = (report.holdings || []).length;
-  document.getElementById('rDividendForecast').textContent = report.dividendEval || '—';
+  txt('rTotalAssets', report.totalAssets != null ? `¥${Number(report.totalAssets).toLocaleString()}` : '—');
+  txt('rDailyPnl', report.dailyPnl != null ? (typeof report.dailyPnl === 'number' ? `${report.dailyPnl>0?'+':''}¥${Math.abs(report.dailyPnl).toLocaleString()}` : report.dailyPnl) : '—');
+  txt('rHoldingsCount', (report.holdings || []).length);
+  txt('rDividendForecast', report.dividendEval || '—');
 
   // Overall grade mapping
-  document.getElementById('overallStars').textContent = (function(){ const g = report.grade||'B'; return g==='S'?'★★★★★':g==='A'?'★★★★':g==='B'?'★★★':g==='C'?'★★':'★'; })();
-  document.getElementById('overallRank').textContent = (report.grade && (report.grade==='S'?'Sランク':report.grade+'ランク')) || '—';
+  (function(){
+    const g = (report.grade || 'B').toUpperCase();
+    const stars = g==='S' ? '★★★★★' : g==='A' ? '★★★★' : g==='B' ? '★★★' : g==='C' ? '★★' : '★';
+    txt('overallStars', stars);
+    txt('overallRank', (g === 'S') ? 'Sランク' : (g + 'ランク'));
+  })();
 
   // AI summary
-  document.getElementById('rAiSummary').textContent = (report.aiComment||[]).join('\n\n');
+  txt('rAiSummary', (report.aiComment && report.aiComment.length) ? report.aiComment.join('\n\n') : (report.aiComment || '—'));
 
   // Strategy lists
-  function renderNames(id, arr){ const el = document.getElementById(id); el.innerHTML=''; (arr||[]).forEach(n=>{ const d=document.createElement('div'); d.textContent='・'+n; el.appendChild(d);} ); }
+  function renderNames(id, arr){
+    const el = qs('#' + id);
+    if(!el) return;
+    el.innerHTML = '';
+    (arr||[]).forEach(n=>{
+      const d = document.createElement('div');
+      d.textContent = '・' + n;
+      el.appendChild(d);
+    });
+    if(!(arr||[]).length) el.textContent = '—';
+  }
   renderNames('rBuy', report.buy); renderNames('rHold', report.hold); renderNames('rWatch', report.watch); renderNames('rSell', report.sell);
 
+  // Risk analysis
+  (function(){
+    const container = qs('#rRisk');
+    if(!container) return;
+    const risk = report.riskLevel || 'unknown';
+    if(risk === 'high'){
+      container.innerHTML = '<div class="risk-score"><div class="risk-pill risk-high">高リスク</div><div class="small-muted">短期的なボラティリティが予想されます。ヘッジや一部利確を検討。</div></div>';
+    } else if(risk === 'medium'){
+      container.innerHTML = '<div class="risk-score"><div class="risk-pill risk-medium">中リスク</div><div class="small-muted">バランス良好。銘柄選定を継続監視。</div></div>';
+    } else if(risk === 'low'){
+      container.innerHTML = '<div class="risk-score"><div class="risk-pill risk-low">低リスク</div><div class="small-muted">安定傾向。配当・長期保有を推奨。</div></div>';
+    } else {
+      container.textContent = (report.riskSummary || '—');
+    }
+  })();
+
+  // Simulations
+  (function(){
+    const el = qs('#rSimulations');
+    el.innerHTML = '';
+    const sims = report.simulations || [];
+    if(!sims.length){
+      el.textContent = '—';
+      return;
+    }
+    sims.slice(0,3).forEach(s=>{
+      const card = document.createElement('div'); card.className='sim-card';
+      const title = document.createElement('div'); title.style.fontWeight='800'; title.textContent = s.name || 'シミュレーション';
+      const desc = document.createElement('div'); desc.className='small-muted'; desc.style.marginTop='6px'; desc.textContent = s.summary || '';
+      const value = document.createElement('div'); value.style.marginTop='8px'; value.textContent = `期待値: ${s.expectedReturn != null ? (s.expectedReturn>0?'+':'') + (s.expectedReturn + '%') : '—'}`;
+      card.appendChild(title); card.appendChild(desc); card.appendChild(value);
+      el.appendChild(card);
+    });
+  })();
+
+  // Guild Master comment
+  txt('guildComment', report.guildComment || (report.guildMasterNote || '—'));
+
+  // Today's Strategy short
+  txt('rStrategyShort', (report.todayStrategy && report.todayStrategy.slice(0,200)) || '—');
+
   // 銘柄別AIコメント
-  const hc = document.getElementById('holdingComments'); hc.innerHTML='';
+  const hc = qs('#holdingComments'); hc.innerHTML='';
   (report.holdings||[]).forEach(h =>{
     const box = document.createElement('div'); box.className='holding-comment';
-    const title = document.createElement('div'); title.style.fontWeight='800'; title.textContent = h.name;
+    const title = document.createElement('div'); title.style.fontWeight='800'; title.textContent = h.name || '—';
 
     // badge
-    const badge = document.createElement('span'); badge.className='badge ' + (h.recommendation || 'hold');
+    const badge = document.createElement('span'); badge.className='badge ' + ((h.recommendation || 'hold').toLowerCase());
     const badgeMap = { buy: '🟢 買い増し', hold: '🟡 保有', watch: '🟠 様子見', sell: '🔴 利益確定候補' };
-    badge.textContent = badgeMap[h.recommendation] || '🟡 保有';
+    badge.textContent = badgeMap[(h.recommendation || 'hold').toLowerCase()] || '🟡 保有';
 
     title.appendChild(badge);
     const lines = document.createElement('div'); lines.style.marginTop='8px';
@@ -212,22 +323,39 @@
   });
 
   // Holdings list cards
-  const hl = document.getElementById('holdingsList'); hl.innerHTML='';
+  const hl = qs('#holdingsList'); hl.innerHTML='';
   (report.holdings||[]).forEach(h =>{
     const card = document.createElement('div'); card.className='hold-card';
-    const title = document.createElement('div'); title.textContent = h.name; title.style.fontWeight='800';
+    const title = document.createElement('div'); title.textContent = h.name || '—'; title.style.fontWeight='800';
     const meta = document.createElement('div'); meta.className='hold-meta';
-    const val = document.createElement('div'); val.textContent = `評価額: ¥${(h.value||0).toLocaleString()}`;
-    const pnl = document.createElement('div'); pnl.textContent = `損益: ${h.pnl? (h.pnl>0?'+':'')+`¥${Math.abs(h.pnl).toLocaleString()}` : '—'}`;
+    const val = document.createElement('div'); val.textContent = `評価額: ${h.value != null ? '¥' + Number(h.value).toLocaleString() : '—'}`;
+    const pnl = document.createElement('div'); pnl.textContent = `損益: ${h.pnl != null ? (h.pnl>0?'+':'') + '¥' + Math.abs(h.pnl).toLocaleString() : '—'}`;
+    if(h.pnl > 0) pnl.className = 'pnl up'; else if(h.pnl < 0) pnl.className = 'pnl down';
     meta.appendChild(val); meta.appendChild(pnl);
     const row2 = document.createElement('div'); row2.style.marginTop='8px'; row2.textContent = `本日の変動: ${h.todayChange||'—'} ・ 役職: ${h.job||'—'} ・ レベル: ${h.level||'—'}`;
     const row3 = document.createElement('div'); row3.style.marginTop='8px'; row3.textContent = `配当評価: ${h.dividendRank||'—'} ・ 成長評価: ${h.growthRank||'—'}`;
     const comment = document.createElement('div'); comment.style.marginTop='8px'; comment.textContent = `AIコメント: ${(h.aiComment||[]).slice(0,2).join(' / ') || '—'}`;
+    // MVP marker
+    if(report.mvp && report.mvp === h.id){
+      const m = document.createElement('span'); m.className='mvp-badge'; m.textContent='MVP';
+      title.appendChild(m);
+    }
     card.appendChild(title); card.appendChild(meta); card.appendChild(row2); card.appendChild(row3); card.appendChild(comment);
     hl.appendChild(card);
   });
 
-  document.getElementById('backBtn').addEventListener('click', ()=>{ window.location.href = './index.html'; });
+  // MVP display
+  (function(){
+    const el = qs('#rMvp');
+    if(!el) return;
+    if(report.mvpName){
+      el.innerHTML = `<strong>${report.mvpName}</strong> がMVPです。${report.mvpReason || ''}`;
+    } else {
+      el.textContent = '—';
+    }
+  })();
+
+  qs('#backBtn').addEventListener('click', ()=>{ window.location.href = './index.html'; });
 
 })();
 </script>
