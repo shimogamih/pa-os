@@ -1,8 +1,10 @@
-// script.js — PA-OS v2 interactions & animations
+// script.js — PA-OS v2.1 interactions & animations
 (() => {
   const cards = Array.from(document.querySelectorAll('[data-anim]'));
   const members = Array.from(document.querySelectorAll('.member-card'));
   const navItems = Array.from(document.querySelectorAll('.nav-item'));
+  const startBtn = document.getElementById('startBtn');
+  const floatingStart = document.getElementById('floatingStart');
 
   function awaken(){
     const all = cards.concat(members);
@@ -58,6 +60,33 @@
       if(nav === 'portfolio') document.querySelector('.dashboard-grid').scrollIntoView({behavior:'smooth',block:'start'});
       if(nav === 'home') window.scrollTo({top:0,behavior:'smooth'});
     });
+  });
+
+  // start button interactions
+  function invokeAI(){
+    // simple ritual animation
+    const all = cards.concat(members);
+    all.forEach((c,i)=>{
+      setTimeout(()=>{
+        c.animate([
+          { transform: 'scale(1)', boxShadow: '0 20px 50px rgba(2,6,23,0.7)' },
+          { transform: 'scale(1.02)', boxShadow: '0 30px 70px rgba(46,35,71,0.45)' },
+          { transform: 'scale(1)' }
+        ],{duration:900,iterations:1,easing:'ease-in-out'});
+      }, i*60);
+    });
+    // subtle background flare
+    const bg = document.querySelector('.bg-orbit');
+    if(bg) bg.animate([{opacity:0.4},{opacity:1},{opacity:0.4}],{duration:1200,iterations:1});
+  }
+
+  if(startBtn) startBtn.addEventListener('click', ()=>{
+    invokeAI();
+    alert('Portfolio AI を起動します');
+  });
+  if(floatingStart) floatingStart.addEventListener('click', ()=>{
+    invokeAI();
+    alert('Portfolio AI を起動します');
   });
 
   // subtle card tilt on pointer devices

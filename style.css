@@ -1,4 +1,4 @@
-/* style.css — PA-OS v2 enhancements (dark theme)
+/* style.css — PA-OS v2.1 enhancements (dark theme)
    Mobile-first, responsive, optimized for iPhone Safari
 */
 :root{
@@ -72,6 +72,8 @@ body{
 .nav-item span{font-size:11px;margin-top:6px}
 .nav-item.active{color:var(--accent2)}
 .footer{display:none}
+/* floating start button */
+.floating-start{position:fixed;right:16px;bottom:92px;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#061018;border:none;padding:12px 14px;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,0.5);font-weight:700;z-index:60}
 /* animations */
 [data-anim]{opacity:0;transform:translateY(8px);transition:all .6s cubic-bezier(.2,.9,.3,1)}
 [data-anim].awake{opacity:1;transform:none}
