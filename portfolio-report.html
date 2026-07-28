@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Portfolio AI Report</title>
+<link rel="stylesheet" href="./style.css">
+<style>
+/* Page-specific styles to match dark fantasy theme */
+.loading-steps{list-style:none;padding:12px;margin:12px 0}
+.loading-steps li{padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.loading-steps li.done{background:linear-gradient(90deg,rgba(45,212,191,0.06),rgba(155,110,240,0.04));}
+.report-block{margin-top:12px}
+.rule{border-top:1px solid rgba(255,255,255,0.03);margin:12px 0}
+.report-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:720px){.report-grid{grid-template-columns:repeat(2,1fr)}}
+.section{padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
+.big-eval{font-size:20px;font-weight:800;color:#ffd54a}
+.sub-eval{font-size:18px;font-weight:700}
+.hold-list{display:flex;flex-direction:column;gap:8px}
+.hold-card{display:flex;flex-direction:column;padding:10px;border-radius:10px;background:rgba(255,255,255,0.02)}
+.hold-meta{display:flex;justify-content:space-between;gap:8px}
+.bottom-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{background:linear-gradient(135deg,var(--accent1),var(--accent2));padding:10px 12px;border-radius:10px;color:#061018;border:none;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="branding"><h1>Portfolio AI Report</h1><div class="sub">ポートフォリオAIレポート</div></div>
+</header>
+<main class="container">
+
+  <section class="card" id="loadingSection">
+    <div class="card-header"><h2>解析中</h2><small>処理の進捗</small></div>
+    <div class="card-body">
+      <ul id="steps" class="loading-steps">
+        <li data-step="market">・市場データ取得中...</li>
+        <li data-step="holdings">・保有銘柄分析中...</li>
+        <li data-step="news">・ニュース取得中...</li>
+        <li data-step="ai">・AIレポート生成中...</li>
+      </ul>
+      <div id="loadingNote" class="small">解析が完了すると結果が表示されます。しばらくお待ちください。</div>
+    </div>
+  </section>
+
+  <section id="reportSection" class="card" style="display:none">
+    <div class="card-header"><h2>Portfolio AI Report</h2><small>総合レポート</small></div>
+    <div class="card-body report-block">
+
+      <div class="section">
+        <div class="sub-eval">━━━━━━━━━━━━━━━━━━</div>
+        <h3>総合評価</h3>
+        <div id="overallStars" class="big-eval">★★★★★</div>
+        <div id="overallRank" class="sub-eval">Sランク</div>
+        <div class="sub-eval">━━━━━━━━━━━━━━━━━━</div>
+      </div>
+
+      <div class="report-grid">
+        <div class="section">
+          <h3>総資産</h3>
+          <div id="rTotalAssets">—</div>
+        </div>
+        <div class="section">
+          <h3>本日の損益</h3>
+          <div id="rDailyPnl">—</div>
+        </div>
+        <div class="section">
+          <h3>保有銘柄数</h3>
+          <div id="rHoldingsCount">—</div>
+        </div>
+        <div class="section">
+          <h3>配当予想</h3>
+          <div id="rDividendForecast">—</div>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+      <div class="section">
+        <h3>AI総評</h3>
+        <div id="rAiSummary">—</div>
+      </div>
+
+      <div class="rule"></div>
+      <div class="section">
+        <h3>今日の作戦</h3>
+        <div id="rStrategy">
+          <div>・買い候補</div><div id="rBuy">—</div>
+          <div>・保有継続</div><div id="rHold">—</div>
+          <div>・注意銘柄</div><div id="rWatch">—</div>
+          <div>・利益確定候補</div><div id="rSell">—</div>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+      <div class="section">
+        <h3>保有銘柄一覧</h3>
+        <div id="holdingsList" class="hold-list"></div>
+      </div>
+
+      <div class="bottom-actions">
+        <button id="backBtn" class="btn">ダッシュボードに戻る</button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+<script>
+(async function(){
+  const steps = Array.from(document.querySelectorAll('#steps li'));
+  function markDone(stepKey){
+    const el = document.querySelector(`#steps li[data-step="${stepKey}"]`);
+    if(el) el.classList.add('done');
+  }
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+  // Try to read detailed report from sessionStorage
+  let report = null;
+  try{ report = JSON.parse(sessionStorage.getItem('paos_ai_report_detailed')); } catch(e){ report = null; }
+
+  // If not available, try to request via opener
+  if(!report && window.opener && window.opener.paos && window.opener.paos.requestDetailedReport){
+    try{ await window.opener.paos.requestDetailedReport(); report = JSON.parse(sessionStorage.getItem('paos_ai_report_detailed')); } catch(e){ report = null; }
+  }
+
+  const timings = [700,900,900,1200];
+  const keys = ['market','holdings','news','ai'];
+  for(let i=0;i<keys.length;i++){
+    markDone(keys[i]);
+    await sleep(timings[i]);
+  }
+
+  if(!report){
+    document.getElementById('loadingSection').querySelector('.card-body').innerHTML = '<div class="small">レポートが見つかりません。ダッシュボードからPortfolio AIを実行してください。</div>';
+    return;
+  }
+
+  // Render report
+  document.getElementById('loadingSection').style.display = 'none';
+  document.getElementById('reportSection').style.display = '';
+
+  // Header values
+  document.getElementById('rTotalAssets').textContent = `¥${(report.totalAssets||0).toLocaleString()}`;
+  document.getElementById('rDailyPnl').textContent = report.dailyPnl || '—';
+  document.getElementById('rHoldingsCount').textContent = (report.holdings || []).length;
+  document.getElementById('rDividendForecast').textContent = report.dividendEval || '—';
+
+  // Overall grade mapping
+  document.getElementById('overallStars').textContent = (function(){ const g = report.grade||'B'; return g==='S'?'★★★★★':g==='A'?'★★★★':g==='B'?'★★★':'★★'; })();
+  document.getElementById('overallRank').textContent = (report.grade && (report.grade==='S'?'Sランク':report.grade+'ランク')) || '—';
+
+  // AI summary
+  document.getElementById('rAiSummary').textContent = (report.aiComment||[]).join('\n\n');
+
+  // Strategy lists
+  function renderNames(id, arr){ const el = document.getElementById(id); el.innerHTML=''; (arr||[]).forEach(n=>{ const d=document.createElement('div'); d.textContent='・'+n; el.appendChild(d);} ); }
+  renderNames('rBuy', report.buy); renderNames('rHold', report.hold); renderNames('rWatch', report.watch); renderNames('rSell', report.sell);
+
+  // Holdings list cards
+  const hl = document.getElementById('holdingsList'); hl.innerHTML='';
+  (report.holdings||[]).forEach(h =>{
+    const card = document.createElement('div'); card.className='hold-card';
+    const title = document.createElement('div'); title.textContent = h.name; title.style.fontWeight='800';
+    const meta = document.createElement('div'); meta.className='hold-meta';
+    const val = document.createElement('div'); val.textContent = `評価額: ¥${(h.value||0).toLocaleString()}`;
+    const pnl = document.createElement('div'); pnl.textContent = `損益: ${h.pnl? (h.pnl>0?'+':'')+`¥${Math.abs(h.pnl).toLocaleString()}` : '—'}`;
+    meta.appendChild(val); meta.appendChild(pnl);
+    const row2 = document.createElement('div'); row2.style.marginTop='8px'; row2.textContent = `本日の変動: ${h.todayChange||'—'} ・ 役職: ${h.job||'—'} ・ レベル: ${h.level||'—'}`;
+    const row3 = document.createElement('div'); row3.style.marginTop='8px'; row3.textContent = `配当評価: ${h.dividendRank||'—'} ・ 成長評価: ${h.growthRank||'—'}`;
+    const comment = document.createElement('div'); comment.style.marginTop='8px'; comment.textContent = `AIコメント: ${h.aiComment||'—'}`;
+    card.appendChild(title); card.appendChild(meta); card.appendChild(row2); card.appendChild(row3); card.appendChild(comment);
+    hl.appendChild(card);
+  });
+
+  document.getElementById('backBtn').addEventListener('click', ()=>{ window.location.href = './index.html'; });
+
+})();
+</script>
+</body>
+</html>

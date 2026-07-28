@@ -1,4 +1,4 @@
-// script.js — PA-OS Portfolio Engine v1 (updated: Portfolio AI Engine v2)
+// script.js — PA-OS Portfolio Engine v1 (updated to point to portfolio-report.html)
 (() => {
   // Utility functions
   function fmtYen(n){
@@ -58,7 +58,7 @@
     return score;
   }
 
-  // Rendering functions
+  // Rendering functions (dashboard)
   function renderDashboard(data){
     if(!data) return;
     document.getElementById('guildName').textContent = data.guild.name || '—';
@@ -138,59 +138,43 @@
     const daily = calculateDailyProfit(data);
     const score = calculatePortfolioScore(data);
     const grade = score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D';
-    // holdings percent
-    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0 }));
+    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0, pnl: Number(m.pnl)||0, job: m.job, level: m.level, dividendRank: m.dividendRank, growthRank: m.growthRank, aiComment: m.aiComment||'', todayChange: m.todayChange||'' }));
     const holdingsSum = holdings.reduce((s,h)=> s+h.value, 0) || 1;
-    const holdingPercents = holdings.map(h=> ({ name: h.name, value: h.value, percent: Math.round((h.value/holdingsSum)*100) }));
-    // sectors heuristic by job
-    const sectorMap = {
-      'Tank':'防御', 'Attacker':'産業', 'Sniper':'宇宙/テック', 'Support':'テック', 'Legendary':'ハイテク'
-    };
+    const holdingPercents = holdings.map(h=> ({ name: h.name, value: h.value, percent: Math.round((h.value/holdingsSum)*100), pnl: h.pnl, job: h.job, level: h.level, dividendRank: h.dividendRank, growthRank: h.growthRank, aiComment: h.aiComment, todayChange: h.todayChange }));
+    const sectorMap = { 'Tank':'防御', 'Attacker':'産業', 'Sniper':'宇宙/テック', 'Support':'テック', 'Legendary':'ハイテク' };
     const sectors = {};
     (data.members||[]).forEach(m => { const s = sectorMap[m.job] || 'その他'; sectors[s] = (sectors[s]||0) + (Number(m.value)||0); });
     const sectorArr = Object.keys(sectors).map(k=> ({ name:k, value: sectors[k] }));
     const sectorSum = sectorArr.reduce((s,x)=> s + x.value, 0) || 1;
     const sectorPercents = sectorArr.map(s=> ({ name: s.name, percent: Math.round((s.value/sectorSum)*100) }));
-    // dividend & growth eval (simple aggregation)
     const divScore = (data.members||[]).reduce((s,m)=> s + ({'A':3,'B':2,'C':1}[m.dividendRank]||1),0) / Math.max(1,(data.members||[]).length);
     const growthScore = (data.members||[]).reduce((s,m)=> s + ({'A':3,'B':2,'C':1}[m.growthRank]||1),0) / Math.max(1,(data.members||[]).length);
     const dividendEval = divScore >= 2.6 ? 'A' : divScore >= 1.8 ? 'B' : 'C';
     const growthEval = growthScore >= 2.6 ? 'A' : growthScore >= 1.8 ? 'B' : 'C';
-    // risk eval
     const risk = (data.portfolio && Number(data.portfolio.risk)) || 0;
     const riskEval = risk >= 70 ? '高' : risk >= 40 ? '中' : '低';
-    // buy/hold/watch/sell heuristics
     const buy = [], hold = [], watch = [], sell = [];
     (data.members||[]).forEach(m =>{
-      // strong growth & low pnl negative -> buy
       if(m.growthRank === 'A' && m.pnl >= 0) buy.push(m.name);
       else if(m.growthRank === 'A' && m.pnl < 0) watch.push(m.name);
       else if(m.growthRank === 'B' && m.dividendRank === 'A') hold.push(m.name);
       else if(m.pnl < 0 && m.growthRank === 'C') sell.push(m.name);
       else hold.push(m.name);
     });
-    // AI comments
     const comments = [];
     comments.push(`総合スコア: ${score} — 等級: ${grade}`);
     comments.push('テックとハイテクへの比率が高い場合、金利変動リスクに注意してください。');
     comments.push('配当利回りの高い銘柄はポートフォリオの安定化に寄与します。');
-    // assemble
-    const report = {
-      grade, totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents,
-      sectors: sectorPercents, dividendEval, growthEval, riskEval, aiComment: comments,
-      buy, hold, watch, sell
-    };
+    const report = { grade, totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents, sectors: sectorPercents, dividendEval, growthEval, riskEval, aiComment: comments, buy, hold, watch, sell };
     return report;
   }
 
   function openPortfolioAI(report){
     try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
     catch(e){ console.error('sessionStorage error', e); }
-    // open in same window to preserve navigation
-    window.location.href = './portfolio-ai.html';
+    window.location.href = './portfolio-report.html';
   }
 
-  // Bind buttons
   async function onStart(){
     const data = await loadPortfolio();
     if(!data) return alert('ポートフォリオを読み込めませんでした');
@@ -198,12 +182,10 @@
     data.portfolio.dailyProfit = calculateDailyProfit(data);
     await savePortfolio(data);
     renderDashboard(data);
-    // generate detailed report
     const report = await generateDetailedReport(data);
     openPortfolioAI(report);
   }
 
-  // Expose a requestDetailedReport method for popup to call (not used here but for completeness)
   async function requestDetailedReport(){
     const data = await loadPortfolio();
     if(!data) return null;
@@ -223,9 +205,6 @@
     document.querySelectorAll('.nav-item').forEach(it=>{ it.addEventListener('click', ()=>{ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); it.classList.add('active'); }); });
   });
 
-  // Expose functions for debugging
-  window.paos = {
-    loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore, requestDetailedReport
-  };
+  window.paos = { loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore, requestDetailedReport };
 
 })();
