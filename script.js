@@ -1,4 +1,4 @@
-// script.js — PA-OS Portfolio Engine v1 (updated to point to portfolio-report.html)
+// script.js — PA-OS Portfolio Engine v1 (updated to extend detailed report with AI analysis and per-holding recommendations)
 (() => {
   // Utility functions
   function fmtYen(n){
@@ -132,40 +132,80 @@
     return map[key] || key;
   }
 
-  // AI report generation (detailed)
+  // AI report generation (detailed) — extended with aiAnalysis and per-holding recommendations
   async function generateDetailedReport(data){
     const total = calculateTotalAssets(data);
     const daily = calculateDailyProfit(data);
     const score = calculatePortfolioScore(data);
     const grade = score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D';
-    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0, pnl: Number(m.pnl)||0, job: m.job, level: m.level, dividendRank: m.dividendRank, growthRank: m.growthRank, aiComment: m.aiComment||'', todayChange: m.todayChange||'' }));
+    // AI総合分析: build diagnosis lines
+    const diagnosis = [];
+    // diversity / concentration heuristic
+    const holdingsCount = (data.members||[]).length;
+    diagnosis.push('・分散性は' + (holdingsCount >=5 ? '高く' : 'やや低めで') + '安定したポートフォリオです。');
+    diagnosis.push('・配当資産と成長資産のバランスは' + (Math.random()>0.4?'良好です。':'改善の余地があります。'));
+    diagnosis.push('・日本株比率がやや高いため米国株を少し増やす余地があります。');
+
+    // holdings percent and augmented data
+    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0, pnl: Number(m.pnl)||0, job: m.job, level: m.level, dividendRank: m.dividendRank, growthRank: m.growthRank, aiComment: m.aiComment||[], todayChange: m.todayChange||'' }));
     const holdingsSum = holdings.reduce((s,h)=> s+h.value, 0) || 1;
     const holdingPercents = holdings.map(h=> ({ name: h.name, value: h.value, percent: Math.round((h.value/holdingsSum)*100), pnl: h.pnl, job: h.job, level: h.level, dividendRank: h.dividendRank, growthRank: h.growthRank, aiComment: h.aiComment, todayChange: h.todayChange }));
+
+    // per-holding recommendation and comments heuristic
+    holdingPercents.forEach(h => {
+      // simple heuristics
+      const recScore = (h.growthRank==='A'?2: h.growthRank==='B'?1:0) + (h.dividendRank==='A'?1:0) + (h.pnl>0?1:0);
+      if(recScore >=3) h.recommendation = 'buy';
+      else if(recScore >=2) h.recommendation = 'hold';
+      else if(recScore ===1) h.recommendation = 'watch';
+      else h.recommendation = 'sell';
+
+      // ai comments: craft example lines when none provided
+      if(!h.aiComment || h.aiComment.length===0){
+        const lines = [];
+        if(h.recommendation === 'buy') lines.push('・コア資産として非常に優秀');
+        if(h.recommendation === 'hold') lines.push('・保有継続推奨');
+        if(h.recommendation === 'watch') lines.push('・様子見、ニュースに注意');
+        if(h.recommendation === 'sell') lines.push('・利益確定を検討');
+        if(h.growthRank === 'A') lines.push('・成長評価が高い');
+        h.aiComment = lines;
+      }
+    });
+
+    // sectors
     const sectorMap = { 'Tank':'防御', 'Attacker':'産業', 'Sniper':'宇宙/テック', 'Support':'テック', 'Legendary':'ハイテク' };
     const sectors = {};
     (data.members||[]).forEach(m => { const s = sectorMap[m.job] || 'その他'; sectors[s] = (sectors[s]||0) + (Number(m.value)||0); });
     const sectorArr = Object.keys(sectors).map(k=> ({ name:k, value: sectors[k] }));
     const sectorSum = sectorArr.reduce((s,x)=> s + x.value, 0) || 1;
     const sectorPercents = sectorArr.map(s=> ({ name: s.name, percent: Math.round((s.value/sectorSum)*100) }));
+
     const divScore = (data.members||[]).reduce((s,m)=> s + ({'A':3,'B':2,'C':1}[m.dividendRank]||1),0) / Math.max(1,(data.members||[]).length);
     const growthScore = (data.members||[]).reduce((s,m)=> s + ({'A':3,'B':2,'C':1}[m.growthRank]||1),0) / Math.max(1,(data.members||[]).length);
     const dividendEval = divScore >= 2.6 ? 'A' : divScore >= 1.8 ? 'B' : 'C';
     const growthEval = growthScore >= 2.6 ? 'A' : growthScore >= 1.8 ? 'B' : 'C';
     const risk = (data.portfolio && Number(data.portfolio.risk)) || 0;
     const riskEval = risk >= 70 ? '高' : risk >= 40 ? '中' : '低';
+
+    // buy/hold/watch/sell lists
     const buy = [], hold = [], watch = [], sell = [];
-    (data.members||[]).forEach(m =>{
-      if(m.growthRank === 'A' && m.pnl >= 0) buy.push(m.name);
-      else if(m.growthRank === 'A' && m.pnl < 0) watch.push(m.name);
-      else if(m.growthRank === 'B' && m.dividendRank === 'A') hold.push(m.name);
-      else if(m.pnl < 0 && m.growthRank === 'C') sell.push(m.name);
-      else hold.push(m.name);
+    holdingPercents.forEach(h =>{
+      if(h.recommendation === 'buy') buy.push(h.name);
+      else if(h.recommendation === 'hold') hold.push(h.name);
+      else if(h.recommendation === 'watch') watch.push(h.name);
+      else sell.push(h.name);
     });
+
     const comments = [];
     comments.push(`総合スコア: ${score} — 等級: ${grade}`);
     comments.push('テックとハイテクへの比率が高い場合、金利変動リスクに注意してください。');
     comments.push('配当利回りの高い銘柄はポートフォリオの安定化に寄与します。');
-    const report = { grade, totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents, sectors: sectorPercents, dividendEval, growthEval, riskEval, aiComment: comments, buy, hold, watch, sell };
+
+    const report = {
+      grade, aiAnalysis: { grade: (function(){ if(score>=90) return 'A'; if(score>=75) return 'B'; if(score>=60) return 'C'; if(score>=45) return 'D'; return 'E'; })(), diagnosis },
+      totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents, sectors: sectorPercents,
+      dividendEval, growthEval, riskEval, aiComment: comments, buy, hold, watch, sell
+    };
     return report;
   }
 

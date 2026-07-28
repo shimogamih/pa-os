@@ -22,6 +22,16 @@
 .hold-meta{display:flex;justify-content:space-between;gap:8px}
 .bottom-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .btn{background:linear-gradient(135deg,var(--accent1),var(--accent2));padding:10px 12px;border-radius:10px;color:#061018;border:none;font-weight:700;cursor:pointer}
+/* Recommendation badges */
+.badge{display:inline-block;padding:6px 8px;border-radius:999px;font-weight:700;color:#061018;margin-left:8px}
+.badge.buy{background:#34d399} /* green */
+.badge.hold{background:#fbbf24} /* yellow */
+.badge.watch{background:#fb923c} /* orange */
+.badge.sell{background:#fb7185} /* red */
+/* AI analysis and per-holding comment cards */
+.ai-analysis{margin-bottom:12px}
+.ai-diagnosis{margin-top:8px;color:var(--muted);white-space:pre-line}
+.holding-comment{padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -46,6 +56,18 @@
   <section id="reportSection" class="card" style="display:none">
     <div class="card-header"><h2>Portfolio AI Report</h2><small>総合レポート</small></div>
     <div class="card-body report-block">
+
+      <!-- AI総合分析 -->
+      <div class="section ai-analysis">
+        <h3>「AI総合分析」</h3>
+        <div>
+          <strong>■ 総合評価</strong>
+          <div id="aiGrade" class="big-eval">—</div>
+        </div>
+        <div style="margin-top:10px"><strong>■ ポートフォリオ診断</strong>
+          <div id="aiDiagnosis" class="ai-diagnosis">—</div>
+        </div>
+      </div>
 
       <div class="section">
         <div class="sub-eval">━━━━━━━━━━━━━━━━━━</div>
@@ -89,6 +111,14 @@
           <div>・注意銘柄</div><div id="rWatch">—</div>
           <div>・利益確定候補</div><div id="rSell">—</div>
         </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <!-- 銘柄別AIコメント -->
+      <div class="section">
+        <h3>銘柄別AIコメント</h3>
+        <div id="holdingComments"></div>
       </div>
 
       <div class="rule"></div>
@@ -139,6 +169,10 @@
   document.getElementById('loadingSection').style.display = 'none';
   document.getElementById('reportSection').style.display = '';
 
+  // AI総合分析
+  document.getElementById('aiGrade').textContent = report.aiAnalysis ? (report.aiAnalysis.grade || '—') : '—';
+  document.getElementById('aiDiagnosis').textContent = report.aiAnalysis ? (report.aiAnalysis.diagnosis || []).join('\n') : '—';
+
   // Header values
   document.getElementById('rTotalAssets').textContent = `¥${(report.totalAssets||0).toLocaleString()}`;
   document.getElementById('rDailyPnl').textContent = report.dailyPnl || '—';
@@ -146,7 +180,7 @@
   document.getElementById('rDividendForecast').textContent = report.dividendEval || '—';
 
   // Overall grade mapping
-  document.getElementById('overallStars').textContent = (function(){ const g = report.grade||'B'; return g==='S'?'★★★★★':g==='A'?'★★★★':g==='B'?'★★★':'★★'; })();
+  document.getElementById('overallStars').textContent = (function(){ const g = report.grade||'B'; return g==='S'?'★★★★★':g==='A'?'★★★★':g==='B'?'★★★':g==='C'?'★★':'★'; })();
   document.getElementById('overallRank').textContent = (report.grade && (report.grade==='S'?'Sランク':report.grade+'ランク')) || '—';
 
   // AI summary
@@ -155,6 +189,27 @@
   // Strategy lists
   function renderNames(id, arr){ const el = document.getElementById(id); el.innerHTML=''; (arr||[]).forEach(n=>{ const d=document.createElement('div'); d.textContent='・'+n; el.appendChild(d);} ); }
   renderNames('rBuy', report.buy); renderNames('rHold', report.hold); renderNames('rWatch', report.watch); renderNames('rSell', report.sell);
+
+  // 銘柄別AIコメント
+  const hc = document.getElementById('holdingComments'); hc.innerHTML='';
+  (report.holdings||[]).forEach(h =>{
+    const box = document.createElement('div'); box.className='holding-comment';
+    const title = document.createElement('div'); title.style.fontWeight='800'; title.textContent = h.name;
+
+    // badge
+    const badge = document.createElement('span'); badge.className='badge ' + (h.recommendation || 'hold');
+    const badgeMap = { buy: '🟢 買い増し', hold: '🟡 保有', watch: '🟠 様子見', sell: '🔴 利益確定候補' };
+    badge.textContent = badgeMap[h.recommendation] || '🟡 保有';
+
+    title.appendChild(badge);
+    const lines = document.createElement('div'); lines.style.marginTop='8px';
+    if(h.aiComment && h.aiComment.length){
+      h.aiComment.forEach(line=>{ const p=document.createElement('div'); p.textContent = '・' + line; lines.appendChild(p); });
+    } else {
+      lines.textContent = '・コメントなし';
+    }
+    box.appendChild(title); box.appendChild(lines); hc.appendChild(box);
+  });
 
   // Holdings list cards
   const hl = document.getElementById('holdingsList'); hl.innerHTML='';
@@ -167,7 +222,7 @@
     meta.appendChild(val); meta.appendChild(pnl);
     const row2 = document.createElement('div'); row2.style.marginTop='8px'; row2.textContent = `本日の変動: ${h.todayChange||'—'} ・ 役職: ${h.job||'—'} ・ レベル: ${h.level||'—'}`;
     const row3 = document.createElement('div'); row3.style.marginTop='8px'; row3.textContent = `配当評価: ${h.dividendRank||'—'} ・ 成長評価: ${h.growthRank||'—'}`;
-    const comment = document.createElement('div'); comment.style.marginTop='8px'; comment.textContent = `AIコメント: ${h.aiComment||'—'}`;
+    const comment = document.createElement('div'); comment.style.marginTop='8px'; comment.textContent = `AIコメント: ${(h.aiComment||[]).slice(0,2).join(' / ') || '—'}`;
     card.appendChild(title); card.appendChild(meta); card.appendChild(row2); card.appendChild(row3); card.appendChild(comment);
     hl.appendChild(card);
   });
