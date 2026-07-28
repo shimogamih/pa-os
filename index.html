@@ -2,137 +2,148 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-<title>PA-OS</title>
+<title>PA-OS v2</title>
 <link rel="stylesheet" href="./style.css">
 
 </head>
-
 <body>
 
-<header>
-
-PA-OS
-
-<div class="subtitle">
-Portfolio AI Operating System
-</div>
-
+<header class="topbar">
+  <div class="branding">
+    <div class="crest" aria-hidden="true">PA-OS</div>
+    <div>
+      <h1>PA-OS v2</h1>
+      <div class="sub">Portfolio AI Operating System — Dark Theme</div>
+    </div>
+  </div>
+  <button id="startBtn" class="start-btn">🚀 Portfolio AI</button>
 </header>
 
-<div class="container">
+<main class="container">
 
-<div class="card" data-anim>
+  <!-- Guild summary (kept from original) -->
+  <section class="card guild-card" data-anim>
+    <div class="card-header"><h2>🏰 ギルド</h2><small>Alliance overview</small></div>
+    <div class="card-body">
+      <div class="guild-name">Blue Phoenix</div>
+      <div class="rank">★★★★★</div>
+    </div>
+  </section>
 
-<div class="title">
-🏰 ギルド
-</div>
+  <!-- Dashboard cards -->
+  <section class="dashboard-grid">
+    <article class="card" data-anim>
+      <div class="card-header"><h2>💰 Total Assets</h2><small>All holdings</small></div>
+      <div class="card-body">
+        <div class="big-value" data-target="2940500">¥2,940,500</div>
+        <div class="trend up">+4.7% today</div>
+      </div>
+    </article>
 
-<div class="guild">
-Blue Phoenix
-</div>
+    <article class="card" data-anim>
+      <div class="card-header"><h2>📈 Today's Profit / Loss</h2><small>Unrealized + realized</small></div>
+      <div class="card-body">
+        <div class="big-value profit" data-target="+41200">+¥41,200</div>
+        <div class="small">Net change across portfolio</div>
+      </div>
+    </article>
 
-<div class="rank">
-★★★★★
-</div>
+    <article class="card" data-anim>
+      <div class="card-header"><h2>🏅 Portfolio Rank</h2><small>Guild leaderboard</small></div>
+      <div class="card-body">
+        <div class="rank-big">#12</div>
+        <div class="small">Top 5% in the server</div>
+      </div>
+    </article>
 
-</div>
+    <article class="card" data-anim>
+      <div class="card-header"><h2>💸 Dividend Income</h2><small>Monthly estimate</small></div>
+      <div class="card-body">
+        <div class="big-value" data-target="12400">¥12,400</div>
+        <div class="small">Projected this month</div>
+      </div>
+    </article>
 
-<div class="card" data-anim>
+    <article class="card" data-anim>
+      <div class="card-header"><h2>⚖️ Risk Level</h2><small>Portfolio volatility</small></div>
+      <div class="card-body">
+        <div class="radial">
+          <svg viewBox="0 0 42 42"><circle r="15.9" cx="21" cy="21" class="bg"/><circle r="15.9" cx="21" cy="21" class="meter"/></svg>
+          <div class="radial-label">32%</div>
+        </div>
+        <div class="small">Moderate risk — keep hedges ready</div>
+      </div>
+    </article>
 
-<div class="title">
-💰 総資産
-</div>
+    <article class="card" data-anim>
+      <div class="card-header"><h2>📜 Today's Strategy</h2><small>Suggested moves</small></div>
+      <div class="card-body">
+        <ul class="strategy-list">
+          <li><strong>Rebalance</strong> — Shift 6% from alt to core</li>
+          <li><strong>Hedge</strong> — Add protective options</li>
+          <li><strong>Scout</strong> — Watch RuneTech dip</li>
+        </ul>
+      </div>
+    </article>
+  </section>
 
-<div class="value">
-¥0
-</div>
+  <!-- Guild members (reusable cards) -->
+  <section class="members-section">
+    <div class="section-header"><h2>👥 Guild Members</h2><small>Active traders</small></div>
+    <div class="members-grid">
 
-<div class="small">現金・保有資産の合計</div>
+      <div class="member-card" data-anim>
+        <div class="avatar">A</div>
+        <div class="member-body">
+          <div class="m-top"><div class="stock">RuneTech</div><div class="role">Sniper</div></div>
+          <div class="m-stats"><div class="value">¥1,200,000</div><div class="pnl up">+¥48,200</div></div>
+          <div class="m-meta">Lv.18 <span class="mvp">MVP</span></div>
+        </div>
+      </div>
 
-</div>
+      <div class="member-card" data-anim>
+        <div class="avatar">B</div>
+        <div class="member-body">
+          <div class="m-top"><div class="stock">AquaBank</div><div class="role">Tank</div></div>
+          <div class="m-stats"><div class="value">¥740,000</div><div class="pnl down">-¥4,300</div></div>
+          <div class="m-meta">Lv.12</div>
+        </div>
+      </div>
 
-<div class="card" data-anim>
+      <div class="member-card" data-anim>
+        <div class="avatar">C</div>
+        <div class="member-body">
+          <div class="m-top"><div class="stock">Solaris</div><div class="role">Support</div></div>
+          <div class="m-stats"><div class="value">¥420,000</div><div class="pnl up">+¥7,400</div></div>
+          <div class="m-meta">Lv.10</div>
+        </div>
+      </div>
 
-<div class="title">
-⚔ パーティー評価
-</div>
+    </div>
+  </section>
 
-<div style="font-size:24px">
-Sランク
-</div>
+  <!-- Boss card -->
+  <section class="card boss-card" data-anim>
+    <div class="card-header"><h2>👑 Boss</h2><small>Current weakness</small></div>
+    <div class="card-body">
+      <div class="boss-weakness">Overweight in Tech — vulnerability to rate shock</div>
+    </div>
+  </section>
 
-<div style="margin-top:10px;color:#9ca3af">
-バランスの良いポートフォリオです
-</div>
+</main>
 
-</div>
+<!-- Fixed bottom navigation -->
+<nav class="bottom-nav" role="navigation" aria-label="Primary">
+  <button class="nav-item active" data-nav="home">🏠<span>Home</span></button>
+  <button class="nav-item" data-nav="guild">🏰<span>Guild</span></button>
+  <button class="nav-item" data-nav="portfolio">💼<span>Portfolio</span></button>
+  <button class="nav-item" data-nav="market">📈<span>Market</span></button>
+  <button class="nav-item" data-nav="ai">🤖<span>AI</span></button>
+</nav>
 
-<div class="card" data-anim>
-
-<div class="title">
-📜 今日の作戦
-</div>
-
-<div style="line-height:1.8">
-
-・押し目候補を監視<br>
-・配当銘柄を強化<br>
-・AI分析を実行
-
-</div>
-
-</div>
-
-<div class="card" data-anim>
-
-<div class="title">
-👥 ギルドメンバー
-</div>
-
-<div class="list">
- <div class="member">
-   <div class="name">Aria</div>
-   <div class="meta">資本: ¥1,200,000</div>
- </div>
- <div class="member">
-   <div class="name">Borin</div>
-   <div class="meta">資本: ¥740,000</div>
- </div>
- <div class="member">
-   <div class="name">Cyn</div>
-   <div class="meta">資本: ¥420,000</div>
- </div>
-</div>
-
-</div>
-
-<div class="card" data-anim>
-
-<div class="title">
-👑 ボス
-</div>
-
-<div class="boss">Overlord Kest</div>
-<div class="small">ギルド全体の統括。戦略の最終承認者。</div>
-
-</div>
-
-<button id="startBtn" class="button"
-onclick="alert('Portfolio AI 起動予定')">
-
-🚀 Portfolio AI 起動
-
-</button>
-
-</div>
-
-<div class="footer">
-
-PA-OS v0.1
-
-</div>
+<footer class="footer">PA-OS v2</footer>
 
 <script src="./script.js" defer></script>
 </body>
