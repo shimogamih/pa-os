@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-<title>PA-OS v3</title>
+<title>PA-OS v3 - RPG指令センター</title>
 <link rel="stylesheet" href="./style.css">
 
 </head>
@@ -22,6 +22,15 @@
 </header>
 
 <main class="container">
+
+  <!-- ギルドマスター -->
+  <section class="card master-card" data-anim>
+    <div class="card-header"><h2>👑 ギルドマスター</h2><small>マスターの指令</small></div>
+    <div class="card-body">
+      <div class="master-name">マスター: セレナ</div>
+      <div class="master-meta">レベル: 50 ・ 指揮力: S</div>
+    </div>
+  </section>
 
   <!-- ギルド -->
   <section class="card guild-card" data-anim>
@@ -78,12 +87,12 @@
     </article>
 
     <article class="card" data-anim>
-      <div class="card-header"><h2>📜 今日の作戦</h2><small>AI提案</small></div>
+      <div class="card-header"><h2>📜 今日のミッション</h2><small>AI提案</small></div>
       <div class="card-body">
-        <ul class="strategy-list">
-          <li>・押し目候補を監視</li>
-          <li>・配当強化</li>
-          <li>・AI分析開始</li>
+        <ul class="mission-list">
+          <li><label><input type="checkbox" class="mission" data-id="m1"> 押し目候補を監視</label></li>
+          <li><label><input type="checkbox" class="mission" data-id="m2"> 配当強化</label></li>
+          <li><label><input type="checkbox" class="mission" data-id="m3"> AI分析開始</label></li>
         </ul>
       </div>
     </article>
@@ -91,49 +100,69 @@
 
   <!-- ギルドメンバー -->
   <section class="members-section">
-    <div class="section-header"><h2>👥 ギルドメンバー</h2><small>アクティブトレーダー</small></div>
+    <div class="section-header"><h2>👥 ギルドメンバー</h2><small>冒険者と資産</small></div>
     <div class="members-grid">
 
+      <!-- オルカン -->
       <div class="member-card" data-anim>
-        <div class="avatar">オ</div>
+        <div class="avatar two-head">
+          <span class="head left"></span>
+          <span class="head right"></span>
+        </div>
         <div class="member-body">
-          <div class="m-top"><div class="stock">オルカン</div><div class="role">職業: スナイパー</div></div>
+          <div class="m-top"><div class="stock">オルカン</div><div class="job">🛡 タンク</div></div>
           <div class="m-stats"><div class="value">評価額: ¥1,200,000</div><div class="pnl up">損益: +¥48,200</div></div>
           <div class="m-meta">レベル: 18 ・ 配当: A ・ 成長: B</div>
         </div>
       </div>
 
+      <!-- 日本精工 -->
       <div class="member-card" data-anim>
-        <div class="avatar">日</div>
+        <div class="avatar two-head">
+          <span class="head left"></span>
+          <span class="head right"></span>
+        </div>
         <div class="member-body">
-          <div class="m-top"><div class="stock">日本精工</div><div class="role">職業: タンク</div></div>
-          <div class="m-stats"><div class="value">評��額: ¥740,000</div><div class="pnl down">損益: -¥4,300</div></div>
+          <div class="m-top"><div class="stock">日本精工</div><div class="job">⚔ アタッカー</div></div>
+          <div class="m-stats"><div class="value">評価額: ¥740,000</div><div class="pnl down">損益: -¥4,300</div></div>
           <div class="m-meta">レベル: 12 ・ 配当: B ・ 成長: C</div>
         </div>
       </div>
 
+      <!-- アドソル日進 -->
       <div class="member-card" data-anim>
-        <div class="avatar">ア</div>
+        <div class="avatar two-head">
+          <span class="head left"></span>
+          <span class="head right"></span>
+        </div>
         <div class="member-body">
-          <div class="m-top"><div class="stock">アドソル日進</div><div class="role">職業: サポート</div></div>
+          <div class="m-top"><div class="stock">アドソル日進</div><div class="job">📖 サポート</div></div>
           <div class="m-stats"><div class="value">評価額: ¥420,000</div><div class="pnl up">損益: +¥7,400</div></div>
           <div class="m-meta">レベル: 10 ・ 配当: B ・ 成長: B</div>
         </div>
       </div>
 
+      <!-- Apple -->
       <div class="member-card" data-anim>
-        <div class="avatar">A</div>
+        <div class="avatar two-head">
+          <span class="head left"></span>
+          <span class="head right"></span>
+        </div>
         <div class="member-body">
-          <div class="m-top"><div class="stock">Apple</div><div class="role">職業: キャリー</div></div>
+          <div class="m-top"><div class="stock">Apple</div><div class="job">✨ レジェンダリー</div></div>
           <div class="m-stats"><div class="value">評価額: ¥2,340,000</div><div class="pnl up">損益: +¥120,000</div></div>
           <div class="m-meta">レベル: 28 ・ 配当: A ・ 成長: A</div>
         </div>
       </div>
 
+      <!-- SpaceX -->
       <div class="member-card" data-anim>
-        <div class="avatar">S</div>
+        <div class="avatar two-head">
+          <span class="head left"></span>
+          <span class="head right"></span>
+        </div>
         <div class="member-body">
-          <div class="m-top"><div class="stock">SpaceX</div><div class="role">職業: スカウト</div></div>
+          <div class="m-top"><div class="stock">SpaceX</div><div class="job">🏹 スナイパー</div></div>
           <div class="m-stats"><div class="value">評価額: ¥1,800,000</div><div class="pnl up">損益: +¥95,000</div></div>
           <div class="m-meta">レベル: 22 ・ 配当: C ・ 成長: A</div>
         </div>
@@ -144,25 +173,26 @@
 
   <!-- ボスカード -->
   <section class="card boss-card" data-anim>
-    <div class="card-header"><h2>👑 ボス</h2><small>現在の最大弱点</small></div>
+    <div class="card-header"><h2>👑 今日のボス</h2><small>最大リスクと対処</small></div>
     <div class="card-body">
-      <div class="boss-weakness">現在の最大弱点</div>
-      <div class="ai-recommend">AIの推奨: ヘッジを追加し、テックへの比率を引き下げることを検討</div>
+      <div class="boss-weakness">最大リスク: テック過集中による金利ショック</div>
+      <div class="boss-weakness">弱点: 流動性の低い小型株の露出</div>
+      <div class="ai-recommend">AI攻略法: ヘッジ追加・ポジション縮小・ディフェンシブ銘柄を増やす</div>
     </div>
   </section>
 
 </main>
 
-<!-- Floating start button -->
+<!-- 浮動起動ボタン -->
 <button id="floatingStart" class="floating-start">ポートフォリオAI 起動</button>
 
-<!-- Fixed bottom navigation (Japanese) -->
+<!-- 下部ナビ (日本語) -->
 <nav class="bottom-nav" role="navigation" aria-label="メイン">
   <button class="nav-item active" data-nav="ホーム">🏠<span>ホーム</span></button>
   <button class="nav-item" data-nav="ギルド">🏰<span>ギルド</span></button>
   <button class="nav-item" data-nav="資産">💼<span>資産</span></button>
   <button class="nav-item" data-nav="市場">📈<span>市場</span></button>
-  <button class="nav-item" data-nav="���ートフォリオAI">🤖<span>ポートフォリオAI</span></button>
+  <button class="nav-item" data-nav="ポートフォリオAI">🤖<span>ポートフォリオAI</span></button>
 </nav>
 
 <footer class="footer">ポートフォリオOS v3</footer>

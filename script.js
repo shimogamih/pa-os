@@ -1,4 +1,4 @@
-// script.js — PA-OS v3 インタラクションとアニメーション
+// script.js — PA-OS v3 インタラクションとアニメーション（日本語���
 (() => {
   const cards = Array.from(document.querySelectorAll('[data-anim]'));
   const members = Array.from(document.querySelectorAll('.member-card'));
@@ -30,9 +30,23 @@
     });
   }
 
+  // ミッ��ョンの状態を復元/保存
+  function loadMissions(){
+    const checks = document.querySelectorAll('.mission');
+    checks.forEach(cb => {
+      const id = cb.getAttribute('data-id');
+      const stored = localStorage.getItem('mission_' + id);
+      if(stored === '1') cb.checked = true;
+      cb.addEventListener('change', ()=>{
+        localStorage.setItem('mission_' + id, cb.checked ? '1' : '0');
+      });
+    });
+  }
+
   window.addEventListener('load', ()=>{
     awaken();
     animateCounters();
+    loadMissions();
 
     // 円形メーター
     document.querySelectorAll('.radial .meter').forEach(m => {
@@ -46,12 +60,12 @@
     });
   });
 
-  // ナビゲーション操作
+  // ナビ操作（日本語ラベルに基づく）
   navItems.forEach(item => {
     item.addEventListener('click', ()=>{
       navItems.forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-      item.animate([{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}],{duration:350,easing:'ease-out'});
+      item.animate([{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}],{duration:300,easing:'ease-out'});
       const nav = item.getAttribute('data-nav');
       if(nav === 'ギルド') document.querySelector('.guild-card').scrollIntoView({behavior:'smooth',block:'center'});
       if(nav === '資産') document.querySelector('.dashboard-grid').scrollIntoView({behavior:'smooth',block:'start'});
@@ -61,13 +75,13 @@
     });
   });
 
-  // 起動アニメーション
+  // 起動アニメーションと日本語通知
   function invokeAI(){
     const all = cards.concat(members);
     all.forEach((c,i)=>{
       setTimeout(()=>{
         c.animate([
-          { transform: 'scale(1)', boxShadow: '0 20px 50px rgba(2,6,23,0.7)' },
+          { transform: 'scale(1)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' },
           { transform: 'scale(1.02)', boxShadow: '0 30px 70px rgba(46,35,71,0.45)' },
           { transform: 'scale(1)' }
         ],{duration:900,iterations:1,easing:'ease-in-out'});
@@ -75,14 +89,13 @@
     });
     const bg = document.querySelector('.bg-orbit');
     if(bg) bg.animate([{opacity:0.4},{opacity:1},{opacity:0.4}],{duration:1200,iterations:1});
-    // ダイアログは日本語で表示
     setTimeout(()=> alert('ポートフォリオAI を起動します'), 200);
   }
 
   if(startBtn) startBtn.addEventListener('click', ()=> invokeAI());
   if(floatingStart) floatingStart.addEventListener('click', ()=> invokeAI());
 
-  // タイルの傾き効果（ポインタ対応）
+  // 傾き効果（ポインタデバイス）
   const tiltTargets = Array.from(document.querySelectorAll('.card, .member-card'));
   tiltTargets.forEach(card=>{
     let supportsPointer = window.matchMedia('(pointer:fine)').matches;
