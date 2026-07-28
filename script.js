@@ -1,4 +1,4 @@
-// script.js — PA-OS Portfolio Engine v1
+// script.js — PA-OS Portfolio Engine v1 (updated: Portfolio AI Engine v2)
 (() => {
   // Utility functions
   function fmtYen(n){
@@ -7,7 +7,6 @@
   }
 
   async function loadPortfolio(){
-    // Prefer session copy if edited; otherwise load portfolio.json
     const stored = localStorage.getItem('paos_portfolio');
     if(stored){
       try{ return JSON.parse(stored); } catch(e){}
@@ -15,7 +14,6 @@
     try{
       const res = await fetch('./portfolio.json', {cache: 'no-store'});
       const data = await res.json();
-      // compute derived fields
       data.portfolio.totalAssets = calculateTotalAssets(data);
       data.portfolio.dailyProfit = calculateDailyProfit(data);
       return data;
@@ -26,7 +24,6 @@
   }
 
   async function savePortfolio(data){
-    // Save to localStorage as a local "DB"
     try{
       localStorage.setItem('paos_portfolio', JSON.stringify(data));
       return true;
@@ -49,15 +46,12 @@
   }
 
   function calculatePortfolioScore(data){
-    // Simple heuristic: combine normalized total assets, dividendIncome, growth ranks
     if(!data) return 0;
     const total = calculateTotalAssets(data);
     const div = (data.portfolio && Number(data.portfolio.dividendIncome)) || 0;
-    // compute avg growth rank numeric A->3 B->2 C->1
     const rankMap = { 'A':3, 'B':2, 'C':1 };
     const avgGrowth = ((data.members||[]).reduce((s,m)=> s + (rankMap[m.growthRank]||1),0)) / Math.max(1,(data.members||[]).length);
-    // normalize
-    const tNorm = Math.min(1, total / 3000000); // assume 3M is excellent
+    const tNorm = Math.min(1, total / 3000000);
     const dNorm = Math.min(1, div / 20000);
     const gNorm = avgGrowth / 3;
     const score = Math.round((tNorm*0.5 + dNorm*0.2 + gNorm*0.3) * 100);
@@ -71,26 +65,18 @@
     document.getElementById('guildRank').textContent = '★'.repeat(data.guild.rank || 0);
     document.getElementById('masterName').textContent = `マスター: ${data.master.name || '—'}`;
     document.getElementById('masterMeta').textContent = `レベル: ${data.master.level || '—'} ・ 指揮力: ${data.master.leadership || '—'}`;
-
-    // totals
     const total = calculateTotalAssets(data);
     document.getElementById('totalAssets').textContent = `¥${total.toLocaleString()}`;
     const daily = calculateDailyProfit(data);
     document.getElementById('dailyPnl').textContent = fmtYen(daily);
     document.getElementById('dailyNote').textContent = 'ポートフォリオ全体の変動';
-
     document.getElementById('dividendIncome').textContent = `¥${(data.portfolio.dividendIncome||0).toLocaleString()}`;
     document.getElementById('dividendNote').textContent = '今月の予測';
-
     document.getElementById('partyRank').textContent = `${(function(){ const s = calculatePortfolioScore(data); return s >= 85 ? 'Sランク' : s >= 70 ? 'Aランク' : s >= 50 ? 'Bランク' : 'Cランク';})()}`;
     document.getElementById('partyNote').textContent = '構成スコア: ' + calculatePortfolioScore(data) + '/100';
-
-    // risk
     const risk = (data.portfolio && data.portfolio.risk) || 0;
     document.getElementById('riskLabel').textContent = `${risk}%`;
     document.getElementById('riskNote').textContent = 'リスク評価 — ヘッジを用意';
-
-    // missions
     const missionContainer = document.getElementById('missionList');
     missionContainer.innerHTML = '';
     (data.portfolio.missions || []).forEach(m => {
@@ -98,18 +84,12 @@
       const label = document.createElement('label');
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.className = 'mission'; cb.dataset.id = m.id; cb.checked = !!m.done;
-      cb.addEventListener('change', ()=>{
-        // update data and save
-        m.done = cb.checked;
-        savePortfolio(data);
-      });
+      cb.addEventListener('change', ()=>{ m.done = cb.checked; savePortfolio(data); });
       label.appendChild(cb);
       label.appendChild(document.createTextNode(' ' + m.text));
       li.appendChild(label);
       missionContainer.appendChild(li);
     });
-
-    // members
     const grid = document.getElementById('membersGrid');
     grid.innerHTML = '';
     (data.members || []).forEach(mem => {
@@ -132,13 +112,9 @@
       card.appendChild(avatar); card.appendChild(body);
       grid.appendChild(card);
     });
-
-    // boss
-    document.getElementById('bossRisk').textContent = `最大リスク: ${data.portfolio.risk}%`; 
+    document.getElementById('bossRisk').textContent = `最大リスク: ${data.portfolio.risk}%`;
     document.getElementById('bossWeakness').textContent = '弱点: 流動性の低い小型株の露出';
-    document.getElementById('bossStrategy').textContent = 'AI攻略法: ヘッジ追加・ポジション縮小・ディ���ェンシブ銘柄を増やす';
-
-    // trigger awaken animation on newly generated elements
+    document.getElementById('bossStrategy').textContent = 'AI攻略法: ヘッジ追加・ポジション縮小・ディフェンシブ銘柄を増やす';
     setTimeout(()=>{
       document.querySelectorAll('[data-anim]').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*80));
       document.querySelectorAll('.member-card').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*60));
@@ -146,7 +122,6 @@
   }
 
   function jobLabel(key){
-    // Map job keys to Japanese labels with icons
     const map = {
       'Tank': '🛡 タンク',
       'Attacker': '⚔ アタッカー',
@@ -157,63 +132,100 @@
     return map[key] || key;
   }
 
-  // AI workflow
-  async function generateAIReport(data){
-    const report = [];
-    report.push(`総資産: ¥${calculateTotalAssets(data).toLocaleString()}`);
-    report.push(`本日の損益: ${fmtYen(calculateDailyProfit(data))}`);
-    report.push(`ポートフォリオスコア: ${calculatePortfolioScore(data)}/100`);
-    report.push(`リスク評価: ${data.portfolio.risk}%`);
-    report.push('推奨アクション: ヘッジ追加、テック比率の調整、配当銘柄の確保');
-    // simple member highlights
-    const sorted = (data.members||[]).slice().sort((a,b)=> (b.pnl||0)-(a.pnl||0));
-    report.push('注目メンバー:');
-    sorted.slice(0,3).forEach(m => report.push(` ・ ${m.name}: 損益 ${fmtYen(m.pnl||0)}, 評価額 ¥${(m.value||0).toLocaleString()}`));
+  // AI report generation (detailed)
+  async function generateDetailedReport(data){
+    const total = calculateTotalAssets(data);
+    const daily = calculateDailyProfit(data);
+    const score = calculatePortfolioScore(data);
+    const grade = score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D';
+    // holdings percent
+    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0 }));
+    const holdingsSum = holdings.reduce((s,h)=> s+h.value, 0) || 1;
+    const holdingPercents = holdings.map(h=> ({ name: h.name, value: h.value, percent: Math.round((h.value/holdingsSum)*100) }));
+    // sectors heuristic by job
+    const sectorMap = {
+      'Tank':'防御', 'Attacker':'産業', 'Sniper':'宇宙/テック', 'Support':'テック', 'Legendary':'ハイテク'
+    };
+    const sectors = {};
+    (data.members||[]).forEach(m => { const s = sectorMap[m.job] || 'その他'; sectors[s] = (sectors[s]||0) + (Number(m.value)||0); });
+    const sectorArr = Object.keys(sectors).map(k=> ({ name:k, value: sectors[k] }));
+    const sectorSum = sectorArr.reduce((s,x)=> s + x.value, 0) || 1;
+    const sectorPercents = sectorArr.map(s=> ({ name: s.name, percent: Math.round((s.value/sectorSum)*100) }));
+    // dividend & growth eval (simple aggregation)
+    const divScore = (data.members||[]).reduce((s,m)=> s + ({'A':3,'B':2,'C':1}[m.dividendRank]||1),0) / Math.max(1,(data.members||[]).length);
+    const growthScore = (data.members||[]).reduce((s,m)=> s + ({'A':3,'B':2,'C':1}[m.growthRank]||1),0) / Math.max(1,(data.members||[]).length);
+    const dividendEval = divScore >= 2.6 ? 'A' : divScore >= 1.8 ? 'B' : 'C';
+    const growthEval = growthScore >= 2.6 ? 'A' : growthScore >= 1.8 ? 'B' : 'C';
+    // risk eval
+    const risk = (data.portfolio && Number(data.portfolio.risk)) || 0;
+    const riskEval = risk >= 70 ? '高' : risk >= 40 ? '中' : '低';
+    // buy/hold/watch/sell heuristics
+    const buy = [], hold = [], watch = [], sell = [];
+    (data.members||[]).forEach(m =>{
+      // strong growth & low pnl negative -> buy
+      if(m.growthRank === 'A' && m.pnl >= 0) buy.push(m.name);
+      else if(m.growthRank === 'A' && m.pnl < 0) watch.push(m.name);
+      else if(m.growthRank === 'B' && m.dividendRank === 'A') hold.push(m.name);
+      else if(m.pnl < 0 && m.growthRank === 'C') sell.push(m.name);
+      else hold.push(m.name);
+    });
+    // AI comments
+    const comments = [];
+    comments.push(`総合スコア: ${score} — 等級: ${grade}`);
+    comments.push('テックとハイテクへの比率が高い場合、金利変動リスクに注意してください。');
+    comments.push('配当利回りの高い銘柄はポートフォリオの安定化に寄与します。');
+    // assemble
+    const report = {
+      grade, totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents,
+      sectors: sectorPercents, dividendEval, growthEval, riskEval, aiComment: comments,
+      buy, hold, watch, sell
+    };
     return report;
   }
 
-  function openAnalysis(reportLines){
-    // store report in sessionStorage and open analysis.html
-    try{ sessionStorage.setItem('paos_ai_report', JSON.stringify(reportLines)); }
+  function openPortfolioAI(report){
+    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
     catch(e){ console.error('sessionStorage error', e); }
-    window.open('./analysis.html','_self');
+    // open in same window to preserve navigation
+    window.location.href = './portfolio-ai.html';
   }
 
   // Bind buttons
   async function onStart(){
     const data = await loadPortfolio();
     if(!data) return alert('ポートフォリオを読み込めませんでした');
-    // update derived
     data.portfolio.totalAssets = calculateTotalAssets(data);
     data.portfolio.dailyProfit = calculateDailyProfit(data);
     await savePortfolio(data);
     renderDashboard(data);
-    const report = await generateAIReport(data);
-    openAnalysis(report);
+    // generate detailed report
+    const report = await generateDetailedReport(data);
+    openPortfolioAI(report);
   }
 
-  // init
+  // Expose a requestDetailedReport method for popup to call (not used here but for completeness)
+  async function requestDetailedReport(){
+    const data = await loadPortfolio();
+    if(!data) return null;
+    const report = await generateDetailedReport(data);
+    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
+    catch(e){}
+    return report;
+  }
+
   window.addEventListener('load', async ()=>{
     const data = await loadPortfolio();
     if(data){ renderDashboard(data); }
-    // bind start buttons
     const startBtn = document.getElementById('startBtn');
     const floating = document.getElementById('floatingStart');
     if(startBtn) startBtn.addEventListener('click', onStart);
     if(floating) floating.addEventListener('click', onStart);
-
-    // nav simple handlers
-    document.querySelectorAll('.nav-item').forEach(it=>{
-      it.addEventListener('click', ()=>{
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-        it.classList.add('active');
-      });
-    });
+    document.querySelectorAll('.nav-item').forEach(it=>{ it.addEventListener('click', ()=>{ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); it.classList.add('active'); }); });
   });
 
   // Expose functions for debugging
   window.paos = {
-    loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore
+    loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore, requestDetailedReport
   };
 
 })();

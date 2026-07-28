@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>ポートフォリオAI レポート</title>
+<link rel="stylesheet" href="./style.css">
+<style>
+/* Minimal overrides for report page */
+.report-steps{list-style:none;padding:12px;margin:12px 0}
+.report-steps li{padding:8px 10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.report-steps li.done{background:linear-gradient(90deg,rgba(45,212,191,0.06),rgba(155,110,240,0.04));}
+.report-container{margin-top:12px}
+.section{margin-bottom:18px;padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
+.section h3{margin:0 0 8px 0}
+.pie-list{display:flex;flex-direction:column;gap:8px}
+.pie-item{display:flex;justify-content:space-between;align-items:center}
+.bar-wrap{flex:1;height:12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-left:12px;margin-right:12px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));}
+.report-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:720px){.report-grid{grid-template-columns:repeat(2,1fr)}}
+.report-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{background:linear-gradient(135deg,var(--accent1),var(--accent2));padding:10px 12px;border-radius:10px;color:#061018;border:none;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="branding"><h1>ポートフォリオAI レポート</h1></div>
+</header>
+<main class="container">
+  <section class="card" id="loadingCard">
+    <div class="card-header"><h2>AI解析プロセス</h2><small>処理状況</small></div>
+    <div class="card-body">
+      <ul id="steps" class="report-steps">
+        <li data-step="market">・市場データ取得中...</li>
+        <li data-step="holdings">・保有銘柄分析中...</li>
+        <li data-step="results">・決算分析中...</li>
+        <li data-step="dividends">・配当分析中...</li>
+        <li data-step="risk">・リスク分析中...</li>
+        <li data-step="ai">・AIレポート生成中...</li>
+      </ul>
+      <div id="loadingNote" class="small">処理が完了するとレポートが表示されます。端末の通信状態により数秒かかる場合があります。</div>
+    </div>
+  </section>
+
+  <section id="reportCard" class="card" style="display:none">
+    <div class="card-header"><h2>レポート</h2><small>総合解析結果</small></div>
+    <div class="card-body report-container">
+
+      <div class="section">
+        <h3>■ 総合評価</h3>
+        <div id="reportGrade" class="big-value">—</div>
+      </div>
+
+      <div class="report-grid">
+        <div class="section">
+          <h3>■ 総資産</h3>
+          <div id="reportTotal" class="big-value">—</div>
+        </div>
+        <div class="section">
+          <h3>■ 本日の損益</h3>
+          <div id="reportDaily" class="big-value">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ 保有比率グラフ</h3>
+          <div id="holdingChart" class="pie-list"></div>
+        </div>
+
+        <div class="section">
+          <h3>■ セクター比率</h3>
+          <div id="sectorChart" class="pie-list"></div>
+        </div>
+
+        <div class="section">
+          <h3>■ 配当評価</h3>
+          <div id="reportDividend">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ 成長評価</h3>
+          <div id="reportGrowth">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ リスク評価</h3>
+          <div id="reportRisk">—</div>
+        </div>
+
+        <div class="section" style="grid-column:1/-1">
+          <h3>■ AIコメント</h3>
+          <div id="reportComment">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ 買い候補</h3>
+          <div id="reportBuy">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ 保有継続</h3>
+          <div id="reportHold">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ 注意銘柄</h3>
+          <div id="reportWatch">—</div>
+        </div>
+
+        <div class="section">
+          <h3>■ 売却候補</h3>
+          <div id="reportSell">—</div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:12px" class="report-actions">
+        <button id="backBtn" class="btn">ダッシュボードに戻る</button>
+        <button id="savePdf" class="btn">レポートを保存（PDF）</button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+<script>
+(async function(){
+  // Steps animation
+  const steps = Array.from(document.querySelectorAll('#steps li'));
+  function markDone(stepKey){
+    const el = document.querySelector(`#steps li[data-step="${stepKey}"]`);
+    if(el) el.classList.add('done');
+  }
+
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+  // Try to get detailed report from sessionStorage; if not present, request generation via opener or redirect
+  let report = null;
+  try{ report = JSON.parse(sessionStorage.getItem('paos_ai_report_detailed')); }
+  catch(e){ report = null; }
+
+  if(!report){
+    // If no report, attempt to call opener (if opened via window.open), otherwise show error
+    if(window.opener && window.opener.paos && window.opener.paos.requestDetailedReport){
+      // ask opener to generate and store report
+      try{
+        await window.opener.paos.requestDetailedReport();
+        report = JSON.parse(sessionStorage.getItem('paos_ai_report_detailed'));
+      } catch(e){ console.error(e); }
+    }
+  }
+
+  // Simulate step progress with timings
+  const timings = [700, 900, 800, 700, 900, 1000];
+  for(let i=0;i<steps.length;i++){
+    markDone(steps[i].dataset.step);
+    await sleep(timings[i]);
+  }
+
+  // After steps complete, render report
+  if(!report){
+    document.getElementById('loadingCard').querySelector('.card-body').innerHTML = '<div class="small">レポートを生成できませんでした。ダッシュボードから再度実行してください。</div>';
+    return;
+  }
+
+  document.getElementById('loadingCard').style.display = 'none';
+  const rc = document.getElementById('reportCard'); rc.style.display = '';
+
+  // Fill simple fields
+  document.getElementById('reportGrade').textContent = report.grade || '—';
+  document.getElementById('reportTotal').textContent = `¥${(report.totalAssets||0).toLocaleString()}`;
+  document.getElementById('reportDaily').textContent = report.dailyPnl || '—';
+  document.getElementById('reportDividend').textContent = report.dividendEval || '—';
+  document.getElementById('reportGrowth').textContent = report.growthEval || '—';
+  document.getElementById('reportRisk').textContent = report.riskEval || '—';
+  document.getElementById('reportComment').textContent = (report.aiComment||[]).join('\n\n');
+
+  // Holding chart
+  const holdEl = document.getElementById('holdingChart'); holdEl.innerHTML='';
+  (report.holdings || []).forEach(h =>{
+    const item = document.createElement('div'); item.className='pie-item';
+    const name = document.createElement('div'); name.textContent = h.name;
+    const wrap = document.createElement('div'); wrap.className='bar-wrap';
+    const fill = document.createElement('div'); fill.className='bar-fill'; fill.style.width = `${h.percent}%`;
+    wrap.appendChild(fill);
+    const pct = document.createElement('div'); pct.textContent = `${h.percent}%`;
+    item.appendChild(name); item.appendChild(wrap); item.appendChild(pct);
+    holdEl.appendChild(item);
+  });
+
+  // Sector chart
+  const secEl = document.getElementById('sectorChart'); secEl.innerHTML='';
+  (report.sectors || []).forEach(s =>{
+    const item = document.createElement('div'); item.className='pie-item';
+    const name = document.createElement('div'); name.textContent = s.name;
+    const wrap = document.createElement('div'); wrap.className='bar-wrap';
+    const fill = document.createElement('div'); fill.className='bar-fill'; fill.style.width = `${s.percent}%`;
+    wrap.appendChild(fill);
+    const pct = document.createElement('div'); pct.textContent = `${s.percent}%`;
+    item.appendChild(name); item.appendChild(wrap); item.appendChild(pct);
+    secEl.appendChild(item);
+  });
+
+  // Lists
+  function renderList(id, arr){
+    const el = document.getElementById(id); el.innerHTML='';
+    (arr||[]).forEach(name => { const d = document.createElement('div'); d.textContent = '・' + name; el.appendChild(d); });
+  }
+  renderList('reportBuy', report.buy || []);
+  renderList('reportHold', report.hold || []);
+  renderList('reportWatch', report.watch || []);
+  renderList('reportSell', report.sell || []);
+
+  // Actions
+  document.getElementById('backBtn').addEventListener('click', ()=>{ window.location.href = './index.html'; });
+  document.getElementById('savePdf').addEventListener('click', ()=>{
+    // simple print to PDF
+    window.print();
+  });
+
+})();
+</script>
+</body>
+</html>
