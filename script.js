@@ -1,4 +1,4 @@
-// script.js — PA-OS v2.1 interactions & animations
+// script.js — PA-OS v3 インタラクションとアニメーション
 (() => {
   const cards = Array.from(document.querySelectorAll('[data-anim]'));
   const members = Array.from(document.querySelectorAll('.member-card'));
@@ -14,7 +14,6 @@
   function animateCounters(){
     document.querySelectorAll('[data-target]').forEach(el => {
       const raw = el.getAttribute('data-target');
-      // allow signs
       const target = parseInt(raw.replace(/[^0-9\-\+]/g,''),10) || 0;
       const start = 0;
       const duration = 900;
@@ -23,7 +22,6 @@
         if(!startTime) startTime = ts;
         const progress = Math.min((ts-startTime)/duration,1);
         const val = Math.round(start + (target-start)*progress);
-        // format with comma
         const sign = raw.trim().startsWith('+')?'+':'';
         el.textContent = (sign + val.toLocaleString('en-US')) ? `${sign}¥${Math.abs(val).toLocaleString()}` : `¥${val}`;
         if(progress < 1) requestAnimationFrame(step);
@@ -36,7 +34,7 @@
     awaken();
     animateCounters();
 
-    // radial meters
+    // 円形メーター
     document.querySelectorAll('.radial .meter').forEach(m => {
       const label = m.closest('.radial').querySelector('.radial-label');
       let val = label ? parseInt(label.textContent,10) : 50;
@@ -48,23 +46,23 @@
     });
   });
 
-  // nav interactions
+  // ナビゲーション操作
   navItems.forEach(item => {
     item.addEventListener('click', ()=>{
       navItems.forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       item.animate([{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}],{duration:350,easing:'ease-out'});
-      // simple routing: scroll to sections
       const nav = item.getAttribute('data-nav');
-      if(nav === 'guild') document.querySelector('.guild-card').scrollIntoView({behavior:'smooth',block:'center'});
-      if(nav === 'portfolio') document.querySelector('.dashboard-grid').scrollIntoView({behavior:'smooth',block:'start'});
-      if(nav === 'home') window.scrollTo({top:0,behavior:'smooth'});
+      if(nav === 'ギルド') document.querySelector('.guild-card').scrollIntoView({behavior:'smooth',block:'center'});
+      if(nav === '資産') document.querySelector('.dashboard-grid').scrollIntoView({behavior:'smooth',block:'start'});
+      if(nav === 'ホーム') window.scrollTo({top:0,behavior:'smooth'});
+      if(nav === '市場') document.querySelector('.dashboard-grid').scrollIntoView({behavior:'smooth',block:'start'});
+      if(nav === 'ポートフォリオAI') invokeAI();
     });
   });
 
-  // start button interactions
+  // 起動アニメーション
   function invokeAI(){
-    // simple ritual animation
     const all = cards.concat(members);
     all.forEach((c,i)=>{
       setTimeout(()=>{
@@ -75,21 +73,16 @@
         ],{duration:900,iterations:1,easing:'ease-in-out'});
       }, i*60);
     });
-    // subtle background flare
     const bg = document.querySelector('.bg-orbit');
     if(bg) bg.animate([{opacity:0.4},{opacity:1},{opacity:0.4}],{duration:1200,iterations:1});
+    // ダイアログは日本語で表示
+    setTimeout(()=> alert('ポートフォリオAI を起動します'), 200);
   }
 
-  if(startBtn) startBtn.addEventListener('click', ()=>{
-    invokeAI();
-    alert('Portfolio AI を起動します');
-  });
-  if(floatingStart) floatingStart.addEventListener('click', ()=>{
-    invokeAI();
-    alert('Portfolio AI を起動します');
-  });
+  if(startBtn) startBtn.addEventListener('click', ()=> invokeAI());
+  if(floatingStart) floatingStart.addEventListener('click', ()=> invokeAI());
 
-  // subtle card tilt on pointer devices
+  // タイルの傾き効果（ポインタ対応）
   const tiltTargets = Array.from(document.querySelectorAll('.card, .member-card'));
   tiltTargets.forEach(card=>{
     let supportsPointer = window.matchMedia('(pointer:fine)').matches;
