@@ -1,4 +1,4 @@
-// script.js — PA-OS Portfolio Engine (loads portfolio_master.json when present)
+// script.js — PA-OS Portfolio Engine (loads portfolio_master.json for AI analysis)
 (() => {
   // Utility functions
   function fmtYen(n){
@@ -7,24 +7,11 @@
   }
 
   async function loadPortfolio(){
-    // Priority: localStorage -> portfolio_master.json -> portfolio.json
+    // Dashboard and local runtime portfolio (unchanged): Priority localStorage -> portfolio.json
     const stored = localStorage.getItem('paos_portfolio');
     if(stored){
       try{ return JSON.parse(stored); } catch(e){ console.warn('Invalid stored portfolio', e); }
     }
-
-    // Try portfolio_master.json first
-    try{
-      const resMaster = await fetch('./portfolio_master.json', {cache: 'no-store'});
-      if(resMaster && resMaster.ok){
-        const data = await resMaster.json();
-        // compute derived fields if missing
-        try{ data.portfolio = data.portfolio || {}; data.portfolio.totalAssets = calculateTotalAssets(data); data.portfolio.dailyProfit = calculateDailyProfit(data); } catch(e){}
-        return data;
-      }
-    } catch(e){ /* ignore and fallback */ }
-
-    // Fallback to bundled sample portfolio.json
     try{
       const res = await fetch('./portfolio.json', {cache: 'no-store'});
       if(res && res.ok){
@@ -34,10 +21,19 @@
         data.portfolio.dailyProfit = calculateDailyProfit(data);
         return data;
       }
-    } catch(e){
-      console.error('ポートフォリオ読み込みエラー', e);
-      return null;
-    }
+    } catch(e){ console.error('ポートフォリオ読み込みエラー', e); }
+    return null;
+  }
+
+  // New: load master portfolio used exclusively by Portfolio AI
+  async function loadMasterPortfolio(){
+    try{
+      const res = await fetch('./portfolio_master.json', {cache: 'no-store'});
+      if(res && res.ok){
+        const master = await res.json();
+        return master;
+      }
+    } catch(e){ /* ignore */ }
     return null;
   }
 
@@ -76,7 +72,7 @@
     return score;
   }
 
-  // Rendering functions (dashboard)
+  // Rendering functions (dashboard) — unchanged
   function renderDashboard(data){
     if(!data) return;
     const guildNameEl = document.getElementById('guildName'); if(guildNameEl) guildNameEl.textContent = data.guild.name || '—';
@@ -158,8 +154,9 @@
     return map[key] || key;
   }
 
-  // AI report generation (simplified)
+  // AI report generation (unchanged) — expects a dashboard-style data object
   async function generateDetailedReport(data){
+    if(!data) return null;
     const total = calculateTotalAssets(data);
     const daily = calculateDailyProfit(data);
     const score = calculatePortfolioScore(data);
@@ -206,23 +203,14 @@
     const riskEval = risk >= 70 ? '高' : risk >= 40 ? '中' : '低';
 
     const buy = [], hold = [], watch = [], sell = [];
-    holdingPercents.forEach(h =>{
-      if(h.recommendation === 'buy') buy.push(h.name);
-      else if(h.recommendation === 'hold') hold.push(h.name);
-      else if(h.recommendation === 'watch') watch.push(h.name);
-      else sell.push(h.name);
-    });
+    holdingPercents.forEach(h =>{ if(h.recommendation === 'buy') buy.push(h.name); else if(h.recommendation === 'hold') hold.push(h.name); else if(h.recommendation === 'watch') watch.push(h.name); else sell.push(h.name); });
 
     const comments = [];
     comments.push(`総合スコア: ${score} — 等級: ${grade}`);
     comments.push('テックとハイテクへの比率が高い場合、金利変動リスクに注意してください。');
     comments.push('配当利回りの高い銘柄はポートフォリオの安定化に寄与します。');
 
-    const report = {
-      grade, aiAnalysis: { grade: (function(){ if(score>=90) return 'A'; if(score>=75) return 'B'; if(score>=60) return 'C'; if(score>=45) return 'D'; return 'E'; })(), diagnosis },
-      totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents, sectors: sectorPercents,
-      dividendEval, growthEval, riskEval, aiComment: comments, buy, hold, watch, sell
-    };
+    const report = { grade, aiAnalysis: { grade: (function(){ if(score>=90) return 'A'; if(score>=75) return 'B'; if(score>=60) return 'C'; if(score>=45) return 'D'; return 'E'; })(), diagnosis }, totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents, sectors: sectorPercents, dividendEval, growthEval, riskEval, aiComment: comments, buy, hold, watch, sell };
     return report;
   }
 
@@ -235,204 +223,103 @@
   // --- AI overlay flow ---
   function showAIOverlay(){
     const overlay = document.getElementById('aiOverlay');
-    if(!overlay) return;
-    overlay.style.display = 'flex';
-    overlay.setAttribute('aria-hidden', 'false');
-    overlay.scrollTop = 0;
+    if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0;
   }
+  function hideAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
 
-  function hideAIOverlay(){
-    const overlay = document.getElementById('aiOverlay');
-    if(!overlay) return;
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden', 'true');
-  }
+  function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl.textContent = `${Math.round(pct)}%`; const bar = document.querySelector('.progress-bar'); if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct))); }
 
-  function setProgress(pct){
-    const fill = document.getElementById('aiProgressFill');
-    const pctEl = document.getElementById('aiProgressPct');
-    if(fill) fill.style.width = `${pct}%`;
-    if(pctEl) pctEl.textContent = `${Math.round(pct)}%`;
-    const bar = document.querySelector('.progress-bar');
-    if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
-  }
-
-  function markAgentDone(agentName){
-    const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card'));
-    const card = cards.find(c => c.getAttribute('data-agent') === agentName);
-    if(card){
-      const status = card.querySelector('.agent-status');
-      if(status) status.textContent = 'Completed';
-      card.classList.add('done');
-    }
-  }
+  function markAgentDone(agentName){ const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card')); const card = cards.find(c => c.getAttribute('data-agent') === agentName); if(card){ const status = card.querySelector('.agent-status'); if(status) status.textContent = 'Completed'; card.classList.add('done'); } }
 
   async function runAISimulationAndNavigate(){
     showAIOverlay();
-    const steps = [
-      { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' },
-      { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' },
-      { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' },
-      { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' },
-      { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' },
-      { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' }
-    ];
+    const steps = [ { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' }, { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' }, { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' }, { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' }, { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' }, { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' } ];
 
     const stepEls = Array.from(document.querySelectorAll('#aiSteps li'));
     stepEls.forEach((el)=> { el.classList.remove('done'); el.classList.remove('active'); el.style.opacity = '0.9'; });
 
     const totalDuration = steps.reduce((s,st)=> s + st.duration, 0);
-    let elapsed = 0;
-    setProgress(0);
-    const startTime = Date.now();
+    let elapsed = 0; setProgress(0); const startTime = Date.now();
 
-    const progInterval = setInterval(()=>{
-      const now = Date.now();
-      const t = now - startTime;
-      const pct = Math.min(100, (t / totalDuration) * 100);
-      setProgress(pct);
-    }, 80);
+    const progInterval = setInterval(()=>{ const now = Date.now(); const t = now - startTime; const pct = Math.min(100, (t / totalDuration) * 100); setProgress(pct); }, 80);
 
-    for(let i=0;i<steps.length;i++){
-      const st = steps[i];
-      const el = stepEls[i];
-      if(el) el.classList.add('active');
-      await new Promise(r => setTimeout(r, st.duration));
-      if(el){
-        el.classList.remove('active');
-        el.classList.add('done');
+    for(let i=0;i<steps.length;i++){ const st = steps[i]; const el = stepEls[i]; if(el) el.classList.add('active'); await new Promise(r => setTimeout(r, st.duration)); if(el){ el.classList.remove('active'); el.classList.add('done'); } elapsed += st.duration; const pctNow = Math.min(100, (elapsed / totalDuration) * 100); setProgress(pctNow); markAgentDone(st.agent); }
+
+    setProgress(100); clearInterval(progInterval); await new Promise(r => setTimeout(r, 600));
+
+    // NEW: Use portfolio_master.json exclusively for AI analysis
+    const master = await loadMasterPortfolio();
+    if(!master){
+      // Show message and stop
+      const inner = document.querySelector('.ai-overlay-inner');
+      if(inner){
+        inner.innerHTML = `<div style="padding:24px;text-align:center;color:#ffdcdc;font-weight:700">Portfolio not initialized.</div>`;
       }
-      elapsed += st.duration;
-      const pctNow = Math.min(100, (elapsed / totalDuration) * 100);
-      setProgress(pctNow);
-      markAgentDone(st.agent);
+      return;
     }
 
-    setProgress(100);
-    clearInterval(progInterval);
-    await new Promise(r => setTimeout(r, 600));
+    // Build dashboard-style data object from master holdings for analysis
+    const members = (master.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
+    const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
+    data.portfolio.totalAssets = calculateTotalAssets(data);
+    data.portfolio.dailyProfit = calculateDailyProfit(data);
 
-    const data = await loadPortfolio();
     let report = null;
-    if(data){
-      report = await generateDetailedReport(data);
-    }
-    if(report){
-      try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){}
-    }
+    try{ report = await generateDetailedReport(data); } catch(e){ console.error('Report generation error', e); }
+    if(report){ try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){} }
 
     window.location.href = './portfolio-report.html';
   }
 
-  // --- First-time setup helpers ---
-  function showSetupOverlay(){
-    const overlay = document.getElementById('setupOverlay');
-    if(!overlay) return;
-    overlay.style.display = 'flex';
-    overlay.setAttribute('aria-hidden', 'false');
-  }
-  function hideSetupOverlay(){
-    const overlay = document.getElementById('setupOverlay');
-    if(!overlay) return;
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden', 'true');
-  }
-  function createPlaceholderLedger(){
-    const placeholder = {
-      guild: { name: 'マイギルド', rank: 1 },
-      master: { name: 'あなた', level: 1, leadership: 'C' },
-      portfolio: {
-        cash: 0,
-        totalAssets: 0,
-        dailyProfit: 0,
-        rank: 0,
-        dividendIncome: 0,
-        risk: 0,
-        missions: []
-      },
-      members: []
-    };
-    return placeholder;
-  }
+  // --- First-time setup helpers (unchanged)
+  function showSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); }
+  function hideSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
+  function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members: [] }; return placeholder; }
 
   // --- Hook into the existing start handlers ---
-  async function onStart(){
-    // show overlay and run simulation
-    runAISimulationAndNavigate().catch(e => {
-      console.error('AI simulation error', e);
-      alert('An error occurred during AI analysis. Please try again.');
-      hideAIOverlay();
-    });
-
-    // background update of dashboard
-    const data = await loadPortfolio();
-    if(!data) return;
-    data.portfolio.totalAssets = calculateTotalAssets(data);
-    data.portfolio.dailyProfit = calculateDailyProfit(data);
-    await savePortfolio(data);
-    renderDashboard(data);
-  }
+  async function onStart(){ runAISimulationAndNavigate().catch(e => { console.error('AI simulation error', e); alert('An error occurred during AI analysis. Please try again.'); hideAIOverlay(); }); const data = await loadPortfolio(); if(!data) return; data.portfolio.totalAssets = calculateTotalAssets(data); data.portfolio.dailyProfit = calculateDailyProfit(data); await savePortfolio(data); renderDashboard(data); }
 
   async function requestDetailedReport(){
-    const data = await loadPortfolio();
-    if(!data) return null;
+    // Return report built from portfolio_master.json only
+    const master = await loadMasterPortfolio();
+    if(!master) return null;
+    const members = (master.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
+    const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
+    data.portfolio.totalAssets = calculateTotalAssets(data);
+    data.portfolio.dailyProfit = calculateDailyProfit(data);
     const report = await generateDetailedReport(data);
-    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
-    catch(e){}
+    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){}
     return report;
   }
 
-  // Initialize and first-time setup control
+  // Initialize and first-time setup control (unchanged)
   window.addEventListener('load', async ()=>{
-    // If user has not completed first-time setup (flag in localStorage), show setup overlay.
     const isInitialized = localStorage.getItem('paos_ledger_initialized') === '1';
     const startBtn = document.getElementById('startBtn');
     const floating = document.getElementById('floatingStart');
 
     if(!isInitialized){
-      // Show setup overlay and block auto-loading of portfolio.json
       showSetupOverlay();
       const chooseBtn = document.getElementById('chooseScreenshotBtn');
       if(chooseBtn){
         chooseBtn.addEventListener('click', async () => {
-          // Create and save placeholder ledger (no OCR implemented)
           const placeholder = createPlaceholderLedger();
-          try{
-            await savePortfolio(placeholder);
-            // mark initialized
-            localStorage.setItem('paos_ledger_initialized', '1');
-          } catch(e){
-            console.error('Failed to save placeholder ledger', e);
-          }
-          hideSetupOverlay();
-          renderDashboard(placeholder);
-          // wire start handlers after rendering
+          try{ await savePortfolio(placeholder); localStorage.setItem('paos_ledger_initialized', '1'); } catch(e){ console.error('Failed to save placeholder ledger', e); }
+          hideSetupOverlay(); renderDashboard(placeholder);
           if(startBtn) startBtn.addEventListener('click', onStart);
           if(floating) floating.addEventListener('click', onStart);
         });
       }
-      // allow non-destructive dismiss with ESC (does not set flag)
-      document.addEventListener('keydown', (e)=>{
-        if(e.key === 'Escape'){
-          hideSetupOverlay();
-        }
-      });
-      // stop further startup until setup completes
+      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ hideSetupOverlay(); } });
       return;
     }
 
-    // Normal startup
     const data = await loadPortfolio();
     if(data){ renderDashboard(data); }
 
     if(startBtn) startBtn.addEventListener('click', onStart);
     if(floating) floating.addEventListener('click', onStart);
-    document.querySelectorAll('.nav-item').forEach(it=>{
-      it.addEventListener('click', ()=>{
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-        it.classList.add('active');
-      });
-    });
+    document.querySelectorAll('.nav-item').forEach(it=>{ it.addEventListener('click', ()=>{ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); it.classList.add('active'); }); });
   });
 
   window.paos = { loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore, requestDetailedReport };
