@@ -127,6 +127,37 @@
 
 <footer class="footer">ポートフォリオOS v3</footer>
 
+<!-- AI Loading Overlay (added) -->
+<div id="aiOverlay" class="ai-overlay" style="display:none" aria-hidden="true">
+  <div class="ai-overlay-inner">
+    <div class="overlay-title">Portfolio AI is analyzing your portfolio...</div>
+    <ul id="aiSteps" class="ai-steps">
+      <li data-step="loading">Loading portfolio...</li>
+      <li data-step="market">Fetching market data...</li>
+      <li data-step="news">Checking news...</li>
+      <li data-step="risk">Risk analysis...</li>
+      <li data-step="dividend">Dividend analysis...</li>
+      <li data-step="generate">Generating AI report...</li>
+    </ul>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div id="aiProgressFill" class="progress-fill" style="width:0%"></div>
+      </div>
+      <div id="aiProgressPct" class="progress-pct">0%</div>
+    </div>
+
+    <div id="aiAgents" class="agents-grid">
+      <div class="agent-card" data-agent="Chief AI"><div class="agent-name">Chief AI</div><div class="agent-status">Running...</div></div>
+      <div class="agent-card" data-agent="Market AI"><div class="agent-name">Market AI</div><div class="agent-status">Running...</div></div>
+      <div class="agent-card" data-agent="News AI"><div class="agent-name">News AI</div><div class="agent-status">Running...</div></div>
+      <div class="agent-card" data-agent="Risk AI"><div class="agent-name">Risk AI</div><div class="agent-status">Running...</div></div>
+      <div class="agent-card" data-agent="Dividend AI"><div class="agent-name">Dividend AI</div><div class="agent-status">Running...</div></div>
+      <div class="agent-card" data-agent="Technical AI"><div class="agent-name">Technical AI</div><div class="agent-status">Running...</div></div>
+    </div>
+  </div>
+</div>
+
 <script src="./script.js" defer></script>
 </body>
 </html>
