@@ -127,7 +127,7 @@
 
 <footer class="footer">ポートフォリオOS v3</footer>
 
-<!-- AI Loading Overlay (added) -->
+<!-- AI Loading Overlay (added earlier) -->
 <div id="aiOverlay" class="ai-overlay" style="display:none" aria-hidden="true">
   <div class="ai-overlay-inner">
     <div class="overlay-title">Portfolio AI is analyzing your portfolio...</div>
@@ -154,6 +154,18 @@
       <div class="agent-card" data-agent="Risk AI"><div class="agent-name">Risk AI</div><div class="agent-status">Running...</div></div>
       <div class="agent-card" data-agent="Dividend AI"><div class="agent-name">Dividend AI</div><div class="agent-status">Running...</div></div>
       <div class="agent-card" data-agent="Technical AI"><div class="agent-name">Technical AI</div><div class="agent-status">Running...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- First-time setup overlay (hidden by default) -->
+<div id="setupOverlay" class="setup-overlay" style="display:none" aria-hidden="true">
+  <div class="setup-inner">
+    <h2 class="setup-title">PA-OSへようこそ</h2>
+    <p class="setup-desc">楽天証券の保有一覧をアップロードしてください</p>
+    <p class="setup-note">この作業は初回のみです</p>
+    <div class="setup-actions">
+      <button id="chooseScreenshotBtn" class="btn">スクリーンショットを選択</button>
     </div>
   </div>
 </div>
