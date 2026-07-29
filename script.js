@@ -1,4 +1,4 @@
-// script.js — PA-OS Portfolio Engine (loads portfolio_master.json for AI analysis)
+// script.js — PA-OS Portfolio Engine (fix: keep welcome visible when master missing)
 (() => {
   // Utility functions
   function fmtYen(n){
@@ -25,7 +25,7 @@
     return null;
   }
 
-  // New: load master portfolio used exclusively by Portfolio AI
+  // Master portfolio loader used exclusively by Portfolio AI
   async function loadMasterPortfolio(){
     try{
       const res = await fetch('./portfolio_master.json', {cache: 'no-store'});
@@ -215,46 +215,98 @@
   }
 
   function openPortfolioAI(report){
-    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
-    catch(e){ console.error('sessionStorage error', e); }
+    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){ console.error('sessionStorage error', e); }
     window.location.href = './portfolio-report.html';
   }
 
   // --- AI overlay flow ---
   function showAIOverlay(){
     const overlay = document.getElementById('aiOverlay');
-    if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0;
+    if(!overlay) return;
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.scrollTop = 0;
   }
-  function hideAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
+  function hideAIOverlay(){
+    const overlay = document.getElementById('aiOverlay');
+    if(!overlay) return;
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+  }
 
-  function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl.textContent = `${Math.round(pct)}%`; const bar = document.querySelector('.progress-bar'); if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct))); }
+  function setProgress(pct){
+    const fill = document.getElementById('aiProgressFill');
+    const pctEl = document.getElementById('aiProgressPct');
+    if(fill) fill.style.width = `${pct}%`;
+    if(pctEl) pctEl.textContent = `${Math.round(pct)}%`;
+    const bar = document.querySelector('.progress-bar');
+    if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
+  }
 
-  function markAgentDone(agentName){ const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card')); const card = cards.find(c => c.getAttribute('data-agent') === agentName); if(card){ const status = card.querySelector('.agent-status'); if(status) status.textContent = 'Completed'; card.classList.add('done'); } }
+  function markAgentDone(agentName){
+    const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card'));
+    const card = cards.find(c => c.getAttribute('data-agent') === agentName);
+    if(card){
+      const status = card.querySelector('.agent-status');
+      if(status) status.textContent = 'Completed';
+      card.classList.add('done');
+    }
+  }
 
   async function runAISimulationAndNavigate(){
     showAIOverlay();
-    const steps = [ { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' }, { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' }, { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' }, { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' }, { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' }, { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' } ];
+    const steps = [
+      { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' },
+      { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' },
+      { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' },
+      { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' },
+      { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' },
+      { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' }
+    ];
 
     const stepEls = Array.from(document.querySelectorAll('#aiSteps li'));
     stepEls.forEach((el)=> { el.classList.remove('done'); el.classList.remove('active'); el.style.opacity = '0.9'; });
 
     const totalDuration = steps.reduce((s,st)=> s + st.duration, 0);
-    let elapsed = 0; setProgress(0); const startTime = Date.now();
+    let elapsed = 0;
+    setProgress(0);
+    const startTime = Date.now();
 
-    const progInterval = setInterval(()=>{ const now = Date.now(); const t = now - startTime; const pct = Math.min(100, (t / totalDuration) * 100); setProgress(pct); }, 80);
+    const progInterval = setInterval(()=>{
+      const now = Date.now();
+      const t = now - startTime;
+      const pct = Math.min(100, (t / totalDuration) * 100);
+      setProgress(pct);
+    }, 80);
 
-    for(let i=0;i<steps.length;i++){ const st = steps[i]; const el = stepEls[i]; if(el) el.classList.add('active'); await new Promise(r => setTimeout(r, st.duration)); if(el){ el.classList.remove('active'); el.classList.add('done'); } elapsed += st.duration; const pctNow = Math.min(100, (elapsed / totalDuration) * 100); setProgress(pctNow); markAgentDone(st.agent); }
+    for(let i=0;i<steps.length;i++){
+      const st = steps[i];
+      const el = stepEls[i];
+      if(el) el.classList.add('active');
+      await new Promise(r => setTimeout(r, st.duration));
+      if(el){
+        el.classList.remove('active');
+        el.classList.add('done');
+      }
+      elapsed += st.duration;
+      const pctNow = Math.min(100, (elapsed / totalDuration) * 100);
+      setProgress(pctNow);
+      markAgentDone(st.agent);
+    }
 
-    setProgress(100); clearInterval(progInterval); await new Promise(r => setTimeout(r, 600));
+    setProgress(100);
+    clearInterval(progInterval);
+    await new Promise(r => setTimeout(r, 600));
 
-    // NEW: Use portfolio_master.json exclusively for AI analysis
+    // Use portfolio_master.json exclusively for AI analysis
     const master = await loadMasterPortfolio();
     if(!master){
-      // Show message and stop
-      const inner = document.querySelector('.ai-overlay-inner');
-      if(inner){
-        inner.innerHTML = `<div style="padding:24px;text-align:center;color:#ffdcdc;font-weight:700">Portfolio not initialized.</div>`;
-      }
+      // If master missing, close AI overlay and show setup/upload overlay so user can import
+      hideAIOverlay();
+      showSetupOverlay();
+      // Optionally focus the upload button
+      const choose = document.getElementById('chooseScreenshotBtn');
+      if(choose) choose.focus();
       return;
     }
 
@@ -277,7 +329,20 @@
   function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members: [] }; return placeholder; }
 
   // --- Hook into the existing start handlers ---
-  async function onStart(){ runAISimulationAndNavigate().catch(e => { console.error('AI simulation error', e); alert('An error occurred during AI analysis. Please try again.'); hideAIOverlay(); }); const data = await loadPortfolio(); if(!data) return; data.portfolio.totalAssets = calculateTotalAssets(data); data.portfolio.dailyProfit = calculateDailyProfit(data); await savePortfolio(data); renderDashboard(data); }
+  async function onStart(){
+    runAISimulationAndNavigate().catch(e => {
+      console.error('AI simulation error', e);
+      alert('An error occurred during AI analysis. Please try again.');
+      hideAIOverlay();
+    });
+
+    const data = await loadPortfolio();
+    if(!data) return; 
+    data.portfolio.totalAssets = calculateTotalAssets(data);
+    data.portfolio.dailyProfit = calculateDailyProfit(data);
+    await savePortfolio(data);
+    renderDashboard(data);
+  }
 
   async function requestDetailedReport(){
     // Return report built from portfolio_master.json only
@@ -292,30 +357,31 @@
     return report;
   }
 
-  // Initialize and first-time setup control (unchanged)
+  // Initialize and first-time setup control — fix: always show welcome if no dashboard data
   window.addEventListener('load', async ()=>{
-    const isInitialized = localStorage.getItem('paos_ledger_initialized') === '1';
     const startBtn = document.getElementById('startBtn');
     const floating = document.getElementById('floatingStart');
 
-    if(!isInitialized){
+    // Try to load existing dashboard data (localStorage or bundled sample)
+    const data = await loadPortfolio();
+    if(data){
+      renderDashboard(data);
+    } else {
+      // No dashboard data available; show the welcome/setup overlay so user can import
       showSetupOverlay();
-      const chooseBtn = document.getElementById('chooseScreenshotBtn');
-      if(chooseBtn){
-        chooseBtn.addEventListener('click', async () => {
-          const placeholder = createPlaceholderLedger();
-          try{ await savePortfolio(placeholder); localStorage.setItem('paos_ledger_initialized', '1'); } catch(e){ console.error('Failed to save placeholder ledger', e); }
-          hideSetupOverlay(); renderDashboard(placeholder);
-          if(startBtn) startBtn.addEventListener('click', onStart);
-          if(floating) floating.addEventListener('click', onStart);
-        });
-      }
-      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ hideSetupOverlay(); } });
-      return;
     }
 
-    const data = await loadPortfolio();
-    if(data){ renderDashboard(data); }
+    // Wire setup upload button if present
+    const chooseBtn = document.getElementById('chooseScreenshotBtn');
+    if(chooseBtn){
+      chooseBtn.addEventListener('click', async () => {
+        const placeholder = createPlaceholderLedger();
+        try{ await savePortfolio(placeholder); localStorage.setItem('paos_ledger_initialized', '1'); } catch(e){ console.error('Failed to save placeholder ledger', e); }
+        hideSetupOverlay(); renderDashboard(placeholder);
+        if(startBtn) startBtn.addEventListener('click', onStart);
+        if(floating) floating.addEventListener('click', onStart);
+      });
+    }
 
     if(startBtn) startBtn.addEventListener('click', onStart);
     if(floating) floating.addEventListener('click', onStart);
