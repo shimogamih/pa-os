@@ -99,7 +99,7 @@
     const riskLabel = document.getElementById('riskLabel'); if(riskLabel) riskLabel.textContent = '';
     const riskNote = document.getElementById('riskNote'); if(riskNote) riskNote.textContent = '';
 
-    const missionContainer = document.getElementById('missionList'); if(missionContainer){ missionContainer.innerHTML = '<li>初回セットアップが必要です</li>'; }
+    const missionContainer = document.getElementById('missionList'); if(missionContainer){ missionContainer.innerHTML = '<li>初回セットアップが必要��す</li>'; }
     const grid = document.getElementById('membersGrid'); if(grid){ grid.innerHTML = '<div class="card"><div class="card-body">初回セットアップが必要です</div></div>'; }
     const bossRisk = document.getElementById('bossRisk'); if(bossRisk) bossRisk.textContent = '';
     const bossWeakness = document.getElementById('bossWeakness'); if(bossWeakness) bossWeakness.textContent = '';
@@ -156,7 +156,7 @@
     return report;
   }
 
-  function openPortfolioAI(report){ try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){ console.error('sessionStorage error', e); } window.location.href = './portfolio-report.html'; }
+  function openPortfolioAI(report){ try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){} window.location.href = './portfolio-report.html'; }
 
   // --- AI overlay flow ---
   function showAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0; }
@@ -197,24 +197,34 @@
   function showSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); }
   function hideSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
 
-  // New: unified startup function for both buttons
+  // New: unified startup function for both buttons (FIXED safe ledger check)
   async function startPortfolioAI(){
     try{
-      // check ledger first (preferred)
       let ledger = null;
-      if(window.PAOS && PAOS.Ledger && PAOS.Ledger.loadLedger){
-        ledger = await PAOS.Ledger.loadLedger();
+      const ledgerAPI = (typeof window !== 'undefined' && window.PAOS && window.PAOS.Ledger) ? window.PAOS.Ledger : null;
+
+      if(ledgerAPI && typeof ledgerAPI.loadLedger === 'function'){
+        try{
+          ledger = await ledgerAPI.loadLedger();
+        } catch(err){
+          console.error('Error loading ledger:', err);
+        }
       }
 
       if(!ledger){
-        // If no ledger, try to fall back to master file; if neither exists show import overlay
+        // Ledger absent — check for master file fallback
         const masterExists = await loadMasterPortfolio();
         if(!masterExists){
+          // No ledger and no master file: show import dialog
+          console.info('No ledger or master file found — showing Portfolio Import overlay');
           showSetupOverlay();
           return;
         }
-        // if master file exists but ledger not, use master file to start AI
-        runAISimulationAndNavigate(masterExists).catch(e => { console.error('AI start error', e); hideAIOverlay(); alert('AI起動中にエラーが発生しました'); });
+        // master file exists: proceed with AI using master file
+        console.info('Master file found (no ledger) — starting AI using master file');
+        try{
+          await runAISimulationAndNavigate(masterExists);
+        } catch(err){ console.error('Error starting AI with master file:', err); hideAIOverlay(); alert('AI起動中にエラーが発生しました'); }
         return;
       }
 
@@ -223,8 +233,15 @@
         holdings: (ledger.holdings || []).map(h => ({ name: h.company || h.ticker || h.id, ticker: h.ticker, currentValue: h.currentValue, profit: h.unrealizedProfit, currentPrice: h.currentPrice }))
       };
 
-      runAISimulationAndNavigate(masterFromLedger).catch(e => { console.error('AI start error', e); hideAIOverlay(); alert('AI起動中にエラーが発生しました'); });
-    } catch(e){ console.error('startPortfolioAI error', e); alert('起動に失敗しました'); }
+      console.info('Ledger found — starting AI using ledger data');
+      try{
+        await runAISimulationAndNavigate(masterFromLedger);
+      } catch(err){ console.error('Error starting AI with ledger:', err); hideAIOverlay(); alert('AI起動中にエラーが発生しました'); }
+    } catch(err){
+      console.error('startPortfolioAI fatal error:', err);
+      try{ hideAIOverlay(); } catch(e){}
+      alert('起動中に予期せぬエラーが発生しました');
+    }
   }
 
   async function requestDetailedReport(){
@@ -252,8 +269,8 @@
     if(chooseBtn){
       chooseBtn.addEventListener('click', async () => {
         // placeholder flow: create empty ledger if none
-        if(window.PAOS && PAOS.Ledger && PAOS.Ledger.createLedger){
-          await PAOS.Ledger.createLedger();
+        if(window.PAOS && PAOS.Ledger && typeof PAOS.Ledger.createLedger === 'function'){
+          try{ await window.PAOS.Ledger.createLedger(); } catch(e){ console.error('Error creating ledger placeholder', e); }
         }
         hideSetupOverlay();
         const newData = await loadPortfolio();
