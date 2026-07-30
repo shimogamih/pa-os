@@ -160,13 +160,21 @@
 
 <!-- First-time setup overlay (hidden by default) -->
 <div id="setupOverlay" class="setup-overlay" style="display:none" aria-hidden="true">
-  <div class="setup-inner">
+  <div class="setup-inner" style="position:relative;">
     <h2 class="setup-title">Portfolio Import</h2>
     <p class="setup-desc">「ポートフォリオのスクリーンショットをアップロードしてください」</p>
     <p class="setup-note">「初回のみ必要です」</p>
+
+    <!-- Visible button -->
     <div class="setup-actions">
-      <button id="chooseScreenshotBtn" class="btn">スクリーンショットを選択</button>
+      <button id="chooseScreenshotBtn" class="btn" type="button">スクリーンショットを選択</button>
     </div>
+
+    <!-- Hidden but focusable file input (not display:none) for iOS Safari -->
+    <input id="screenshotFileInput" type="file" accept="image/*" capture="environment" style="opacity:0; position:absolute; width:1px; height:1px; left:0; top:0;" />
+
+    <!-- Import status -- kept in overlay; updated by script -->
+    <div id="importStatus" class="setup-status" aria-live="polite" style="margin-top:12px; color:#ccc;"></div>
   </div>
 </div>
 
