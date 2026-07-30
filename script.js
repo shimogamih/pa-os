@@ -7,21 +7,11 @@
   }
 
   async function loadPortfolio(){
-    // Priority: localStorage -> portfolio.json (dashboard data)
+    // Only load from localStorage for dashboard; remove sample fallback
     const stored = localStorage.getItem('paos_portfolio');
     if(stored){
       try{ return JSON.parse(stored); } catch(e){ console.warn('Invalid stored portfolio', e); }
     }
-    try{
-      const res = await fetch('./portfolio.json', {cache: 'no-store'});
-      if(res && res.ok){
-        const data = await res.json();
-        data.portfolio = data.portfolio || {};
-        data.portfolio.totalAssets = calculateTotalAssets(data);
-        data.portfolio.dailyProfit = calculateDailyProfit(data);
-        return data;
-      }
-    } catch(e){ console.error('ポートフォリオ読み込みエラー', e); }
     return null;
   }
 
@@ -143,6 +133,33 @@
     }, 80);
   }
 
+  function renderEmptyState(){
+    // Show minimal home with message; keep AI start button visible
+    const guildNameEl = document.getElementById('guildName'); if(guildNameEl) guildNameEl.textContent = '—';
+    const guildRankEl = document.getElementById('guildRank'); if(guildRankEl) guildRankEl.textContent = '';
+    const masterNameEl = document.getElementById('masterName'); if(masterNameEl) masterNameEl.textContent = '';
+    const masterMetaEl = document.getElementById('masterMeta'); if(masterMetaEl) masterMetaEl.textContent = '';
+    const totalEl = document.getElementById('totalAssets'); if(totalEl) totalEl.textContent = '初回セットアップが必要です';
+    const dailyEl = document.getElementById('dailyPnl'); if(dailyEl) dailyEl.textContent = '';
+    const dailyNoteEl = document.getElementById('dailyNote'); if(dailyNoteEl) dailyNoteEl.textContent = '';
+    const dividendEl = document.getElementById('dividendIncome'); if(dividendEl) dividendEl.textContent = '';
+    const dividendNoteEl = document.getElementById('dividendNote'); if(dividendNoteEl) dividendNoteEl.textContent = '';
+    const partyRankEl = document.getElementById('partyRank'); if(partyRankEl) partyRankEl.textContent = '';
+    const partyNoteEl = document.getElementById('partyNote'); if(partyNoteEl) partyNoteEl.textContent = '初回セットアップが必要です';
+    const riskLabel = document.getElementById('riskLabel'); if(riskLabel) riskLabel.textContent = '';
+    const riskNote = document.getElementById('riskNote'); if(riskNote) riskNote.textContent = '';
+
+    const missionContainer = document.getElementById('missionList');
+    if(missionContainer){ missionContainer.innerHTML = '<li>初回セットアップが必要です</li>'; }
+
+    const grid = document.getElementById('membersGrid');
+    if(grid){ grid.innerHTML = '<div class="card"><div class="card-body">初回セットアップが必要です</div></div>'; }
+
+    const bossRisk = document.getElementById('bossRisk'); if(bossRisk) bossRisk.textContent = '';
+    const bossWeakness = document.getElementById('bossWeakness'); if(bossWeakness) bossWeakness.textContent = '';
+    const bossStrategy = document.getElementById('bossStrategy'); if(bossStrategy) bossStrategy.textContent = '';
+  }
+
   function jobLabel(key){
     const map = {
       'Tank': '🛡 タンク',
@@ -221,10 +238,7 @@
   }
 
   // --- AI overlay flow ---
-  function showAIOverlay(){
-    const overlay = document.getElementById('aiOverlay');
-    if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0;
-  }
+  function showAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0; }
   function hideAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
 
   function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl.textContent = `${Math.round(pct)}%`; const bar = document.querySelector('.progress-bar'); if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct))); }
@@ -276,76 +290,4 @@
   // --- First-time setup helpers ---
   function showSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); }
   function hideSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
-  function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members: [] }; return placeholder; }
-
-  // --- Hook into the existing start handlers ---
-  async function onStart(){
-    // Primary behavior: check for master portfolio first
-    const master = await loadMasterPortfolio();
-    if(master){
-      // ensure setup overlay is hidden and start AI immediately
-      hideSetupOverlay();
-      runAISimulationAndNavigate(master).catch(e => { console.error('AI simulation error', e); alert('An error occurred during AI analysis. Please try again.'); hideAIOverlay(); });
-    } else {
-      // No master: show first-time setup overlay only once
-      const seen = localStorage.getItem('paos_ledger_initialized') === '1';
-      if(!seen){
-        localStorage.setItem('paos_ledger_initialized','1');
-        showSetupOverlay();
-      } else {
-        // Already shown once; show the setup overlay as a reminder but do not reset the flag
-        showSetupOverlay();
-      }
-      return;
-    }
-
-    // background update of dashboard
-    const data = await loadPortfolio();
-    if(!data) return;
-    data.portfolio.totalAssets = calculateTotalAssets(data);
-    data.portfolio.dailyProfit = calculateDailyProfit(data);
-    await savePortfolio(data);
-    renderDashboard(data);
-  }
-
-  async function requestDetailedReport(){
-    const master = await loadMasterPortfolio();
-    if(!master) return null;
-    const members = (master.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
-    const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
-    data.portfolio.totalAssets = calculateTotalAssets(data);
-    data.portfolio.dailyProfit = calculateDailyProfit(data);
-    const report = await generateDetailedReport(data);
-    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){}
-    return report;
-  }
-
-  // Initialize and first-time setup control
-  window.addEventListener('load', async ()=>{
-    const startBtn = document.getElementById('startBtn');
-    const floating = document.getElementById('floatingStart');
-
-    // Try to load existing dashboard data (localStorage or bundled sample)
-    const data = await loadPortfolio();
-    if(data){ renderDashboard(data); }
-    else { showSetupOverlay(); }
-
-    // Wire setup/upload button if present
-    const chooseBtn = document.getElementById('chooseScreenshotBtn');
-    if(chooseBtn){
-      chooseBtn.addEventListener('click', async () => {
-        const placeholder = createPlaceholderLedger();
-        try{ await savePortfolio(placeholder); localStorage.setItem('paos_ledger_initialized', '1'); } catch(e){ console.error('Failed to save placeholder ledger', e); }
-        hideSetupOverlay(); renderDashboard(placeholder);
-        if(startBtn) startBtn.addEventListener('click', onStart);
-        if(floating) floating.addEventListener('click', onStart);
-      });
-    }
-
-    if(startBtn) startBtn.addEventListener('click', onStart);
-    if(floating) floating.addEventListener('click', onStart);
-    document.querySelectorAll('.nav-item').forEach(it=>{ it.addEventListener('click', ()=>{ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); it.classList.add('active'); }); });
-  });
-
-  window.paos = { loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore, requestDetailedReport };
-})();
+  function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAsset[...]
