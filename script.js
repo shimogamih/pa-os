@@ -1,4 +1,4 @@
-// script.js — PA-OS Portfolio Engine (fix: keep welcome visible when master missing)
+// script.js — PA-OS Portfolio Engine (AI start behavior: check portfolio_master.json before running)
 (() => {
   // Utility functions
   function fmtYen(n){
@@ -7,7 +7,7 @@
   }
 
   async function loadPortfolio(){
-    // Dashboard and local runtime portfolio (unchanged): Priority localStorage -> portfolio.json
+    // Priority: localStorage -> portfolio.json (dashboard data)
     const stored = localStorage.getItem('paos_portfolio');
     if(stored){
       try{ return JSON.parse(stored); } catch(e){ console.warn('Invalid stored portfolio', e); }
@@ -72,7 +72,7 @@
     return score;
   }
 
-  // Rendering functions (dashboard) — unchanged
+  // Rendering functions (dashboard)
   function renderDashboard(data){
     if(!data) return;
     const guildNameEl = document.getElementById('guildName'); if(guildNameEl) guildNameEl.textContent = data.guild.name || '—';
@@ -154,7 +154,7 @@
     return map[key] || key;
   }
 
-  // AI report generation (unchanged) — expects a dashboard-style data object
+  // AI report generation (simplified)
   async function generateDetailedReport(data){
     if(!data) return null;
     const total = calculateTotalAssets(data);
@@ -215,129 +215,93 @@
   }
 
   function openPortfolioAI(report){
-    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){ console.error('sessionStorage error', e); }
+    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
+    catch(e){ console.error('sessionStorage error', e); }
     window.location.href = './portfolio-report.html';
   }
 
   // --- AI overlay flow ---
   function showAIOverlay(){
     const overlay = document.getElementById('aiOverlay');
-    if(!overlay) return;
-    overlay.style.display = 'flex';
-    overlay.setAttribute('aria-hidden', 'false');
-    overlay.scrollTop = 0;
+    if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0;
   }
-  function hideAIOverlay(){
-    const overlay = document.getElementById('aiOverlay');
-    if(!overlay) return;
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden', 'true');
-  }
+  function hideAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
 
-  function setProgress(pct){
-    const fill = document.getElementById('aiProgressFill');
-    const pctEl = document.getElementById('aiProgressPct');
-    if(fill) fill.style.width = `${pct}%`;
-    if(pctEl) pctEl.textContent = `${Math.round(pct)}%`;
-    const bar = document.querySelector('.progress-bar');
-    if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
-  }
+  function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl.textContent = `${Math.round(pct)}%`; const bar = document.querySelector('.progress-bar'); if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct))); }
 
-  function markAgentDone(agentName){
-    const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card'));
-    const card = cards.find(c => c.getAttribute('data-agent') === agentName);
-    if(card){
-      const status = card.querySelector('.agent-status');
-      if(status) status.textContent = 'Completed';
-      card.classList.add('done');
-    }
-  }
+  function markAgentDone(agentName){ const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card')); const card = cards.find(c => c.getAttribute('data-agent') === agentName); if(card){ const status = card.querySelector('.agent-status'); if(status) status.textContent = 'Completed'; card.classList.add('done'); } }
 
-  async function runAISimulationAndNavigate(){
+  // runAISimulationAndNavigate now accepts a master portfolio object (must exist)
+  async function runAISimulationAndNavigate(master){
     showAIOverlay();
-    const steps = [
-      { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' },
-      { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' },
-      { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' },
-      { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' },
-      { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' },
-      { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' }
-    ];
+    const steps = [ { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' }, { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' }, { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' }, { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' }, { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' }, { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' } ];
 
     const stepEls = Array.from(document.querySelectorAll('#aiSteps li'));
     stepEls.forEach((el)=> { el.classList.remove('done'); el.classList.remove('active'); el.style.opacity = '0.9'; });
 
     const totalDuration = steps.reduce((s,st)=> s + st.duration, 0);
-    let elapsed = 0;
-    setProgress(0);
-    const startTime = Date.now();
+    let elapsed = 0; setProgress(0); const startTime = Date.now();
 
-    const progInterval = setInterval(()=>{
-      const now = Date.now();
-      const t = now - startTime;
-      const pct = Math.min(100, (t / totalDuration) * 100);
-      setProgress(pct);
-    }, 80);
+    const progInterval = setInterval(()=>{ const now = Date.now(); const t = now - startTime; const pct = Math.min(100, (t / totalDuration) * 100); setProgress(pct); }, 80);
 
-    for(let i=0;i<steps.length;i++){
-      const st = steps[i];
-      const el = stepEls[i];
-      if(el) el.classList.add('active');
-      await new Promise(r => setTimeout(r, st.duration));
-      if(el){
-        el.classList.remove('active');
-        el.classList.add('done');
+    for(let i=0;i<steps.length;i++){ const st = steps[i]; const el = stepEls[i]; if(el) el.classList.add('active'); await new Promise(r => setTimeout(r, st.duration)); if(el){ el.classList.remove('active'); el.classList.add('done'); } elapsed += st.duration; const pctNow = Math.min(100, (elapsed / totalDuration) * 100); setProgress(pctNow); markAgentDone(st.agent); }
+
+    setProgress(100); clearInterval(progInterval); await new Promise(r => setTimeout(r, 600));
+
+    // master should be provided; fallback to attempting to load if not
+    let usedMaster = master;
+    if(!usedMaster){
+      usedMaster = await loadMasterPortfolio();
+      if(!usedMaster){
+        // missing master: close overlay and show setup once
+        hideAIOverlay();
+        const seen = localStorage.getItem('paos_ledger_initialized') === '1';
+        if(!seen){ localStorage.setItem('paos_ledger_initialized','1'); showSetupOverlay(); }
+        else { showSetupOverlay(); }
+        return;
       }
-      elapsed += st.duration;
-      const pctNow = Math.min(100, (elapsed / totalDuration) * 100);
-      setProgress(pctNow);
-      markAgentDone(st.agent);
     }
 
-    setProgress(100);
-    clearInterval(progInterval);
-    await new Promise(r => setTimeout(r, 600));
-
-    // Use portfolio_master.json exclusively for AI analysis
-    const master = await loadMasterPortfolio();
-    if(!master){
-      // If master missing, close AI overlay and show setup/upload overlay so user can import
-      hideAIOverlay();
-      showSetupOverlay();
-      // Optionally focus the upload button
-      const choose = document.getElementById('chooseScreenshotBtn');
-      if(choose) choose.focus();
-      return;
-    }
-
-    // Build dashboard-style data object from master holdings for analysis
-    const members = (master.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
+    const members = (usedMaster.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
     const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
     data.portfolio.totalAssets = calculateTotalAssets(data);
     data.portfolio.dailyProfit = calculateDailyProfit(data);
 
-    let report = null;
-    try{ report = await generateDetailedReport(data); } catch(e){ console.error('Report generation error', e); }
+    let report = null; try{ report = await generateDetailedReport(data); } catch(e){ console.error('Report generation error', e); }
     if(report){ try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){} }
 
     window.location.href = './portfolio-report.html';
   }
 
-  // --- First-time setup helpers (unchanged)
+  // --- First-time setup helpers ---
   function showSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); }
   function hideSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
   function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members: [] }; return placeholder; }
 
   // --- Hook into the existing start handlers ---
   async function onStart(){
-    runAISimulationAndNavigate().catch(e => {
-      console.error('AI simulation error', e);
-      alert('An error occurred during AI analysis. Please try again.');
-      hideAIOverlay();
-    });
+    // Primary behavior: check for master portfolio first
+    const master = await loadMasterPortfolio();
+    if(master){
+      // ensure setup overlay is hidden and start AI immediately
+      hideSetupOverlay();
+      runAISimulationAndNavigate(master).catch(e => { console.error('AI simulation error', e); alert('An error occurred during AI analysis. Please try again.'); hideAIOverlay(); });
+    } else {
+      // No master: show first-time setup overlay only once
+      const seen = localStorage.getItem('paos_ledger_initialized') === '1';
+      if(!seen){
+        localStorage.setItem('paos_ledger_initialized','1');
+        showSetupOverlay();
+      } else {
+        // Already shown once; show the setup overlay as a reminder but do not reset the flag
+        showSetupOverlay();
+      }
+      return;
+    }
 
+    // background update of dashboard
     const data = await loadPortfolio();
-    if(!data) return; 
+    if(!data) return;
     data.portfolio.totalAssets = calculateTotalAssets(data);
     data.portfolio.dailyProfit = calculateDailyProfit(data);
     await savePortfolio(data);
@@ -345,7 +309,6 @@
   }
 
   async function requestDetailedReport(){
-    // Return report built from portfolio_master.json only
     const master = await loadMasterPortfolio();
     if(!master) return null;
     const members = (master.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
@@ -357,21 +320,17 @@
     return report;
   }
 
-  // Initialize and first-time setup control — fix: always show welcome if no dashboard data
+  // Initialize and first-time setup control
   window.addEventListener('load', async ()=>{
     const startBtn = document.getElementById('startBtn');
     const floating = document.getElementById('floatingStart');
 
     // Try to load existing dashboard data (localStorage or bundled sample)
     const data = await loadPortfolio();
-    if(data){
-      renderDashboard(data);
-    } else {
-      // No dashboard data available; show the welcome/setup overlay so user can import
-      showSetupOverlay();
-    }
+    if(data){ renderDashboard(data); }
+    else { showSetupOverlay(); }
 
-    // Wire setup upload button if present
+    // Wire setup/upload button if present
     const chooseBtn = document.getElementById('chooseScreenshotBtn');
     if(chooseBtn){
       chooseBtn.addEventListener('click', async () => {
