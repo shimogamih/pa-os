@@ -1,5 +1,5 @@
-// script.js — PA-OS Portfolio Engine (AI start behavior: check ledger before running)
-(()=>{
+// script.js — PA-OS Portfolio Engine (AI start behavior: check portfolio_master.json before running)
+(() => {
   // Utility functions
   function fmtYen(n){
     const sign = n > 0 ? '+' : (n < 0 ? '-' : '');
@@ -7,6 +7,7 @@
   }
 
   async function loadPortfolio(){
+    // Only load from localStorage for dashboard; remove sample fallback
     const stored = localStorage.getItem('paos_portfolio');
     if(stored){
       try{ return JSON.parse(stored); } catch(e){ console.warn('Invalid stored portfolio', e); }
@@ -14,6 +15,7 @@
     return null;
   }
 
+  // Master portfolio loader used exclusively by Portfolio AI
   async function loadMasterPortfolio(){
     try{
       const res = await fetch('./portfolio_master.json', {cache: 'no-store'});
@@ -26,8 +28,13 @@
   }
 
   async function savePortfolio(data){
-    try{ localStorage.setItem('paos_portfolio', JSON.stringify(data)); return true; }
-    catch(e){ console.error('ポートフォリオ保存エラー', e); return false; }
+    try{
+      localStorage.setItem('paos_portfolio', JSON.stringify(data));
+      return true;
+    } catch(e){
+      console.error('ポートフォリオ保存エラー', e);
+      return false;
+    }
   }
 
   function calculateTotalAssets(data){
@@ -37,7 +44,11 @@
     return membersSum + cash;
   }
 
-  function calculateDailyProfit(data){ if(!data) return 0; return (data.members || []).reduce((s,m)=> s + (Number(m.pnl)||0), 0); }
+  function calculateDailyProfit(data){
+    if(!data) return 0;
+    return (data.members || []).reduce((s,m)=> s + (Number(m.pnl)||0), 0);
+  }
+
   function calculatePortfolioScore(data){
     if(!data) return 0;
     const total = calculateTotalAssets(data);
@@ -51,7 +62,7 @@
     return score;
   }
 
-  // Rendering
+  // Rendering functions (dashboard)
   function renderDashboard(data){
     if(!data) return;
     const guildNameEl = document.getElementById('guildName'); if(guildNameEl) guildNameEl.textContent = data.guild.name || '—';
@@ -67,24 +78,63 @@
     const dividendNoteEl = document.getElementById('dividendNote'); if(dividendNoteEl) dividendNoteEl.textContent = '今月の予測';
     const partyRankEl = document.getElementById('partyRank'); if(partyRankEl) partyRankEl.textContent = `${(function(){ const s = calculatePortfolioScore(data); return s >= 85 ? 'Sランク' : s >= 70 ? 'Aランク' : s >= 50 ? 'Bランク' : 'Cランク'; })()}`;
     const partyNoteEl = document.getElementById('partyNote'); if(partyNoteEl) partyNoteEl.textContent = '構成スコア: ' + calculatePortfolioScore(data) + '/100';
-    const risk = (data.portfolio && data.portfolio.risk);
-    const riskLabel = document.getElementById('riskLabel'); if(riskLabel) riskLabel.textContent = (risk !== undefined && risk !== null) ? `${risk}%` : '';
+    const risk = (data.portfolio && data.portfolio.risk) || 0;
+    const riskLabel = document.getElementById('riskLabel'); if(riskLabel) riskLabel.textContent = `${risk}%`;
     const riskNote = document.getElementById('riskNote'); if(riskNote) riskNote.textContent = 'リスク評価 — ヘッジを用意';
 
     const missionContainer = document.getElementById('missionList');
-    if(missionContainer){ missionContainer.innerHTML = ''; (data.portfolio.missions || []).forEach(m => { const li = document.createElement('li'); const label = document.createElement('label'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'mission'; cb.dataset.id = m.id; cb.checked = !!m.done; cb.addEventListener('change', ()=>{ m.done = cb.checked; savePortfolio(data); }); label.appendChild(cb); label.appendChild(document.createTextNode(' ' + m.text)); li.appendChild(label); missionContainer.appendChild(li); }); }
+    if(missionContainer){
+      missionContainer.innerHTML = '';
+      (data.portfolio.missions || []).forEach(m => {
+        const li = document.createElement('li');
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.className = 'mission'; cb.dataset.id = m.id; cb.checked = !!m.done;
+        cb.addEventListener('change', ()=>{ m.done = cb.checked; savePortfolio(data); });
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(' ' + m.text));
+        li.appendChild(label);
+        missionContainer.appendChild(li);
+      });
+    }
 
     const grid = document.getElementById('membersGrid');
-    if(grid){ grid.innerHTML = ''; (data.members || []).forEach(mem => { const card = document.createElement('div'); card.className = 'member-card'; card.setAttribute('data-anim',''); const avatar = document.createElement('div'); avatar.className = 'avatar two-head'; const headL = document.createElement('span'); headL.className='head left'; const headR = document.createElement('span'); headR.className='head right'; avatar.appendChild(headL); avatar.appendChild(headR); const body = document.createElement('div'); body.className = 'member-body'; const top = document.createElement('div'); top.className = 'm-top'; const stock = document.createElement('div'); stock.className = 'stock'; stock.textContent = mem.name; const job = document.createElement('div'); job.className = 'job'; job.textContent = jobLabel(mem.job); top.appendChild(stock); top.appendChild(job); const stats = document.createElement('div'); stats.className = 'm-stats'; const val = document.createElement('div'); val.className = 'value'; val.textContent = `評価額: ¥${(Number(mem.value)||0).toLocaleString()}`; const pnl = document.createElement('div'); pnl.className = 'pnl ' + ((mem.pnl>=0)?'up':'down'); pnl.textContent = `損益: ${fmtYen(mem.pnl||0)}`; const meta = document.createElement('div'); meta.className = 'm-meta'; meta.textContent = `レベル: ${mem.level || '—'} ・ 配当: ${mem.dividendRank || '—'} ・ 成長: ${mem.growthRank || '—'}`; stats.appendChild(val); stats.appendChild(pnl); body.appendChild(top); body.appendChild(stats); body.appendChild(meta); card.appendChild(avatar); card.appendChild(body); grid.appendChild(card); }); }
+    if(grid){
+      grid.innerHTML = '';
+      (data.members || []).forEach(mem => {
+        const card = document.createElement('div'); card.className = 'member-card'; card.setAttribute('data-anim','');
+        const avatar = document.createElement('div'); avatar.className = 'avatar two-head';
+        const headL = document.createElement('span'); headL.className='head left';
+        const headR = document.createElement('span'); headR.className='head right';
+        avatar.appendChild(headL); avatar.appendChild(headR);
+        const body = document.createElement('div'); body.className = 'member-body';
+        const top = document.createElement('div'); top.className = 'm-top';
+        const stock = document.createElement('div'); stock.className = 'stock'; stock.textContent = mem.name;
+        const job = document.createElement('div'); job.className = 'job'; job.textContent = jobLabel(mem.job);
+        top.appendChild(stock); top.appendChild(job);
+        const stats = document.createElement('div'); stats.className = 'm-stats';
+        const val = document.createElement('div'); val.className = 'value'; val.textContent = `評価額: ¥${(Number(mem.value)||0).toLocaleString()}`;
+        const pnl = document.createElement('div'); pnl.className = 'pnl ' + ((mem.pnl>=0)?'up':'down'); pnl.textContent = `損益: ${fmtYen(mem.pnl||0)}`;
+        const meta = document.createElement('div'); meta.className = 'm-meta'; meta.textContent = `レベル: ${mem.level || '—'} ・ 配当: ${mem.dividendRank || '—'} ・ 成長: ${mem.grow[...];
+        stats.appendChild(val); stats.appendChild(pnl);
+        body.appendChild(top); body.appendChild(stats); body.appendChild(meta);
+        card.appendChild(avatar); card.appendChild(body);
+        grid.appendChild(card);
+      });
+    }
 
-    const bossRisk = document.getElementById('bossRisk'); if(bossRisk) bossRisk.textContent = `最大リスク: ${data.portfolio.risk || ''}`;
+    const bossRisk = document.getElementById('bossRisk'); if(bossRisk) bossRisk.textContent = `最大リスク: ${data.portfolio.risk}%`;
     const bossWeakness = document.getElementById('bossWeakness'); if(bossWeakness) bossWeakness.textContent = '弱点: 流動性の低い小型株の露出';
     const bossStrategy = document.getElementById('bossStrategy'); if(bossStrategy) bossStrategy.textContent = 'AI攻略法: ヘッジ追加・ポジション縮小・ディフェンシブ銘柄を増やす';
 
-    setTimeout(()=>{ document.querySelectorAll('[data-anim]').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*80)); document.querySelectorAll('.member-card').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*60)); }, 80);
+    setTimeout(()=>{
+      document.querySelectorAll('[data-anim]').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*80));
+      document.querySelectorAll('.member-card').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*60));
+    }, 80);
   }
 
   function renderEmptyState(){
+    // Show minimal home with message; keep AI start button visible
     const guildNameEl = document.getElementById('guildName'); if(guildNameEl) guildNameEl.textContent = '—';
     const guildRankEl = document.getElementById('guildRank'); if(guildRankEl) guildRankEl.textContent = '';
     const masterNameEl = document.getElementById('masterName'); if(masterNameEl) masterNameEl.textContent = '';
@@ -99,15 +149,29 @@
     const riskLabel = document.getElementById('riskLabel'); if(riskLabel) riskLabel.textContent = '';
     const riskNote = document.getElementById('riskNote'); if(riskNote) riskNote.textContent = '';
 
-    const missionContainer = document.getElementById('missionList'); if(missionContainer){ missionContainer.innerHTML = '<li>初回セットアップが必要��す</li>'; }
-    const grid = document.getElementById('membersGrid'); if(grid){ grid.innerHTML = '<div class="card"><div class="card-body">初回セットアップが必要です</div></div>'; }
+    const missionContainer = document.getElementById('missionList');
+    if(missionContainer){ missionContainer.innerHTML = '<li>初回セットアップが必要です</li>'; }
+
+    const grid = document.getElementById('membersGrid');
+    if(grid){ grid.innerHTML = '<div class="card"><div class="card-body">初回セットアップが必要です</div></div>'; }
+
     const bossRisk = document.getElementById('bossRisk'); if(bossRisk) bossRisk.textContent = '';
     const bossWeakness = document.getElementById('bossWeakness'); if(bossWeakness) bossWeakness.textContent = '';
     const bossStrategy = document.getElementById('bossStrategy'); if(bossStrategy) bossStrategy.textContent = '';
   }
 
-  function jobLabel(key){ const map = { 'Tank': '🛡 タンク', 'Attacker': '⚔ アタッカー', 'Sniper': '🏹 スナイパー', 'Support': '📖 サポート', 'Legendary': '✨ レジェンダリー' }; return map[key] || key; }
+  function jobLabel(key){
+    const map = {
+      'Tank': '🛡 タンク',
+      'Attacker': '⚔ アタッカー',
+      'Sniper': '🏹 スナイパー',
+      'Support': '📖 サポート',
+      'Legendary': '✨ レジェンダリー'
+    };
+    return map[key] || key;
+  }
 
+  // AI report generation (simplified)
   async function generateDetailedReport(data){
     if(!data) return null;
     const total = calculateTotalAssets(data);
@@ -156,15 +220,21 @@
     return report;
   }
 
-  function openPortfolioAI(report){ try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){} window.location.href = './portfolio-report.html'; }
+  function openPortfolioAI(report){
+    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); }
+    catch(e){ console.error('sessionStorage error', e); }
+    window.location.href = './portfolio-report.html';
+  }
 
   // --- AI overlay flow ---
   function showAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0; }
   function hideAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
+
   function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl.textContent = `${Math.round(pct)}%`; const bar = document.querySelector('.progress-bar'); if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct))); }
+
   function markAgentDone(agentName){ const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card')); const card = cards.find(c => c.getAttribute('data-agent') === agentName); if(card){ const status = card.querySelector('.agent-status'); if(status) status.textContent = 'Completed'; card.classList.add('done'); } }
 
-  // runAISimulationAndNavigate accepts a master-like object
+  // runAISimulationAndNavigate now accepts a master portfolio object (must exist)
   async function runAISimulationAndNavigate(master){
     showAIOverlay();
     const steps = [ { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' }, { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' }, { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' }, { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' }, { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' }, { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' } ];
@@ -180,10 +250,21 @@
 
     setProgress(100); clearInterval(progInterval); await new Promise(r => setTimeout(r, 600));
 
+    // master should be provided; fallback to attempting to load if not
     let usedMaster = master;
-    if(!usedMaster){ usedMaster = await loadMasterPortfolio(); if(!usedMaster){ hideAIOverlay(); showSetupOverlay(); return; } }
+    if(!usedMaster){
+      usedMaster = await loadMasterPortfolio();
+      if(!usedMaster){
+        // missing master: close overlay and show setup once
+        hideAIOverlay();
+        const seen = localStorage.getItem('paos_ledger_initialized') === '1';
+        if(!seen){ localStorage.setItem('paos_ledger_initialized','1'); showSetupOverlay(); }
+        else { showSetupOverlay(); }
+        return;
+      }
+    }
 
-    const members = (usedMaster.holdings || []).map(h => ({ name: h.company || h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit || h.unrealizedProfit)||0, dividendRank: 'C', growthRank: 'B' }));
+    const members = (usedMaster.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
     const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
     data.portfolio.totalAssets = calculateTotalAssets(data);
     data.portfolio.dailyProfit = calculateDailyProfit(data);
@@ -194,66 +275,70 @@
     window.location.href = './portfolio-report.html';
   }
 
+  // --- First-time setup helpers ---
   function showSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); }
   function hideSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
+  function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAsset[...];
 
-  // New: unified startup function for both buttons (FIXED safe ledger check)
-  async function startPortfolioAI(){
-    try{
-      let ledger = null;
-      const ledgerAPI = (typeof window !== 'undefined' && window.PAOS && window.PAOS.Ledger) ? window.PAOS.Ledger : null;
-
-      if(ledgerAPI && typeof ledgerAPI.loadLedger === 'function'){
-        try{
-          ledger = await ledgerAPI.loadLedger();
-        } catch(err){
-          console.error('Error loading ledger:', err);
-        }
-      }
-
-      if(!ledger){
-        // Ledger absent — check for master file fallback
-        const masterExists = await loadMasterPortfolio();
-        if(!masterExists){
-          // No ledger and no master file: show import dialog
-          console.info('No ledger or master file found — showing Portfolio Import overlay');
-          showSetupOverlay();
-          return;
-        }
-        // master file exists: proceed with AI using master file
-        console.info('Master file found (no ledger) — starting AI using master file');
-        try{
-          await runAISimulationAndNavigate(masterExists);
-        } catch(err){ console.error('Error starting AI with master file:', err); hideAIOverlay(); alert('AI起動中にエラーが発生しました'); }
+  // ---- UPDATED: chooseScreenshotBtn handler ----
+  const chooseBtn = document.getElementById('chooseScreenshotBtn');
+  if(chooseBtn){
+    chooseBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Find the real file input
+      const fileInput = document.getElementById('screenshotFileInput');
+      const importStatus = document.getElementById('importStatus');
+      if(!fileInput){
+        console.error('screenshotFileInput not found');
+        if(importStatus) importStatus.textContent = 'ファイル入力が見つかりません';
         return;
       }
 
-      // Ledger exists: build master-like object and start AI
-      const masterFromLedger = {
-        holdings: (ledger.holdings || []).map(h => ({ name: h.company || h.ticker || h.id, ticker: h.ticker, currentValue: h.currentValue, profit: h.unrealizedProfit, currentPrice: h.currentPrice }))
+      // One-time change handler for the selected file
+      const onChange = async (ev) => {
+        try{
+          const files = ev.target.files;
+          if(!files || files.length === 0){
+            // user cancelled — keep overlay open and state unchanged
+            if(importStatus) importStatus.textContent = '選択がキャンセルされました';
+            return;
+          }
+
+          const file = files[0];
+          if(importStatus) importStatus.textContent = '画像を受信しました。インポートを開始します…';
+
+          // Read file as data URL (no OCR)
+          const dataUrl = await new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result);
+            fr.onerror = (e) => reject(e);
+            fr.readAsDataURL(file);
+          });
+
+          try{ sessionStorage.setItem('paos_import_image', dataUrl); } catch(e){ console.warn('sessionStorage write failed', e); }
+
+          // Create ledger if possible
+          if(window.PAOS && window.PAOS.Ledger && typeof window.PAOS.Ledger.createLedger === 'function'){
+            try{ await window.PAOS.Ledger.createLedger(); } catch(e){ console.error('createLedger failed', e); }
+          }
+
+          if(importStatus) importStatus.textContent = 'インポートをキューに登録しました（OCR未実装）';
+
+        } catch(err){
+          console.error('Error handling selected file', err);
+          if(importStatus) importStatus.textContent = 'インポート中にエラーが発生しました';
+        } finally{
+          // reset input so same file can be selected again
+          try{ fileInput.value = ''; } catch(e){}
+        }
       };
 
-      console.info('Ledger found — starting AI using ledger data');
-      try{
-        await runAISimulationAndNavigate(masterFromLedger);
-      } catch(err){ console.error('Error starting AI with ledger:', err); hideAIOverlay(); alert('AI起動中にエラーが発生しました'); }
-    } catch(err){
-      console.error('startPortfolioAI fatal error:', err);
-      try{ hideAIOverlay(); } catch(e){}
-      alert('起動中に予期せぬエラーが発生しました');
-    }
-  }
+      // Attach once
+      fileInput.addEventListener('change', onChange, { once: true });
 
-  async function requestDetailedReport(){
-    const master = await loadMasterPortfolio();
-    if(!master) return null;
-    const members = (master.holdings || []).map(h => ({ name: h.company || h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit||h.unrealizedProfit)||0, dividendRank: 'C', growthRank: 'B' }));
-    const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
-    data.portfolio.totalAssets = calculateTotalAssets(data);
-    data.portfolio.dailyProfit = calculateDailyProfit(data);
-    const report = await generateDetailedReport(data);
-    try{ sessionStorage.setItem('paos_ai_report_detailed', JSON.stringify(report)); } catch(e){}
-    return report;
+      // Trigger platform file picker (iOS Safari will open photo picker)
+      try{ fileInput.click(); } catch(e){ console.error('fileInput.click failed', e); if(importStatus) importStatus.textContent = 'ファイルピッカーを開けませんでした'; }
+    });
   }
 
   // Initialize
@@ -265,18 +350,7 @@
     if(data){ renderDashboard(data); }
     else { renderEmptyState(); }
 
-    const chooseBtn = document.getElementById('chooseScreenshotBtn');
-    if(chooseBtn){
-      chooseBtn.addEventListener('click', async () => {
-        // placeholder flow: create empty ledger if none
-        if(window.PAOS && PAOS.Ledger && typeof PAOS.Ledger.createLedger === 'function'){
-          try{ await window.PAOS.Ledger.createLedger(); } catch(e){ console.error('Error creating ledger placeholder', e); }
-        }
-        hideSetupOverlay();
-        const newData = await loadPortfolio();
-        if(newData) renderDashboard(newData); else renderEmptyState();
-      });
-    }
+    // Note: chooseScreenshotBtn handler updated above
 
     if(startBtn) startBtn.addEventListener('click', startPortfolioAI);
     if(floating) floating.addEventListener('click', startPortfolioAI);
