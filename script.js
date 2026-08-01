@@ -68,7 +68,7 @@
     const guildNameEl = document.getElementById('guildName'); if(guildNameEl) guildNameEl.textContent = data.guild.name || '—';
     const guildRankEl = document.getElementById('guildRank'); if(guildRankEl) guildRankEl.textContent = '★'.repeat(data.guild.rank || 0);
     const masterNameEl = document.getElementById('masterName'); if(masterNameEl) masterNameEl.textContent = `マスター: ${data.master.name || '—'}`;
-    const masterMetaEl = document.getElementById('masterMeta'); if(masterMetaEl) masterMetaEl.textContent = `レベル: ${data.master.level || '—'} ・ 指揮力: ${data.master.leadership || '—'}`;
+    const masterMetaEl = document.getElementById('masterMeta'); if(masterMetaEl) masterMetaEl.textContent = `レベル: ${data.master.level || '—'} ・ 指揮力: ${data.master.leadership || '��[...]';
     const total = calculateTotalAssets(data);
     const totalEl = document.getElementById('totalAssets'); if(totalEl) totalEl.textContent = `¥${total.toLocaleString()}`;
     const daily = calculateDailyProfit(data);
@@ -76,7 +76,7 @@
     const dailyNoteEl = document.getElementById('dailyNote'); if(dailyNoteEl) dailyNoteEl.textContent = 'ポートフォリオ全体の変動';
     const dividendEl = document.getElementById('dividendIncome'); if(dividendEl) dividendEl.textContent = `¥${(data.portfolio.dividendIncome||0).toLocaleString()}`;
     const dividendNoteEl = document.getElementById('dividendNote'); if(dividendNoteEl) dividendNoteEl.textContent = '今月の予測';
-    const partyRankEl = document.getElementById('partyRank'); if(partyRankEl) partyRankEl.textContent = `${(function(){ const s = calculatePortfolioScore(data); return s >= 85 ? 'Sランク' : s >= 70 ? 'Aランク' : s >= 50 ? 'Bランク' : 'Cランク'; })()}`;
+    const partyRankEl = document.getElementById('partyRank'); if(partyRankEl) partyRankEl.textContent = `${(function(){ const s = calculatePortfolioScore(data); return s >= 85 ? 'Sランク' : s >[...]';
     const partyNoteEl = document.getElementById('partyNote'); if(partyNoteEl) partyNoteEl.textContent = '構成スコア: ' + calculatePortfolioScore(data) + '/100';
     const risk = (data.portfolio && data.portfolio.risk) || 0;
     const riskLabel = document.getElementById('riskLabel'); if(riskLabel) riskLabel.textContent = `${risk}%`;
@@ -125,7 +125,7 @@
 
     const bossRisk = document.getElementById('bossRisk'); if(bossRisk) bossRisk.textContent = `最大リスク: ${data.portfolio.risk}%`;
     const bossWeakness = document.getElementById('bossWeakness'); if(bossWeakness) bossWeakness.textContent = '弱点: 流動性の低い小型株の露出';
-    const bossStrategy = document.getElementById('bossStrategy'); if(bossStrategy) bossStrategy.textContent = 'AI攻略法: ヘッジ追加・ポジション縮小・ディフェンシブ銘柄を増やす';
+    const bossStrategy = document.getElementById('bossStrategy'); if(bossStrategy) bossStrategy.textContent = 'AI攻略法: ヘッジ追加・ポジション縮小・ディフェンシブ銘柄��[...]';
 
     setTimeout(()=>{
       document.querySelectorAll('[data-anim]').forEach((el,i)=> setTimeout(()=> el.classList.add('awake'), i*80));
@@ -184,14 +184,14 @@
     diagnosis.push('・配当資産と成長資産のバランスは' + (Math.random()>0.4?'良好です。':'改善の余地があります。'));
     diagnosis.push('・日本株比率がやや高いため米国株を少し増やす余地があります。');
 
-    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0, pnl: Number(m.pnl)||0, job: m.job, level: m.level, dividendRank: m.dividendRank, growthRank: m.growthRank }));
+    const holdings = (data.members || []).map(m => ({ name: m.name, value: Number(m.value)||0, pnl: Number(m.pnl)||0, job: m.job, level: m.level, dividendRank: m.dividendRank, growthRank: m.growt[...];
     const holdingsSum = holdings.reduce((s,h)=> s+h.value, 0) || 1;
-    const holdingPercents = holdings.map(h=> ({ name: h.name, value: h.value, percent: Math.round((h.value/holdingsSum)*100), pnl: h.pnl, job: h.job, level: h.level, dividendRank: h.dividendRank, growthRank: h.growthRank }));
+    const holdingPercents = holdings.map(h=> ({ name: h.name, value: h.value, percent: Math.round((h.value/holdingsSum)*100), pnl: h.pnl, job: h.job, level: h.level, dividendRank: h.dividendRank,[...];
 
     holdingPercents.forEach(h => {
       const recScore = (h.growthRank==='A'?2: h.growthRank==='B'?1:0) + (h.dividendRank==='A'?1:0) + (h.pnl>0?1:0);
       if(recScore >=3) h.recommendation = 'buy'; else if(recScore >=2) h.recommendation = 'hold'; else if(recScore ===1) h.recommendation = 'watch'; else h.recommendation = 'sell';
-      if(!h.aiComment || h.aiComment.length===0){ const lines = []; if(h.recommendation === 'buy') lines.push('・コア資産として非常に優秀'); if(h.recommendation === 'hold') lines.push('・保有継続推奨'); if(h.recommendation === 'watch') lines.push('・様子見、ニュースに注意'); if(h.recommendation === 'sell') lines.push('・利益確定を検討'); if(h.growthRank === 'A') lines.push('・成長評価が高い'); h.aiComment = lines; }
+      if(!h.aiComment || h.aiComment.length===0){ const lines = []; if(h.recommendation === 'buy') lines.push('・コア資産として非常に優秀'); if(h.recommendation === 'hold') lines.pus[...];
     });
 
     const sectorMap = { 'Tank':'防御', 'Attacker':'産業', 'Sniper':'宇宙/テック', 'Support':'テック', 'Legendary':'ハイテク' };
@@ -209,14 +209,14 @@
     const riskEval = risk >= 70 ? '高' : risk >= 40 ? '中' : '低';
 
     const buy = [], hold = [], watch = [], sell = [];
-    holdingPercents.forEach(h =>{ if(h.recommendation === 'buy') buy.push(h.name); else if(h.recommendation === 'hold') hold.push(h.name); else if(h.recommendation === 'watch') watch.push(h.name); else sell.push(h.name); });
+    holdingPercents.forEach(h =>{ if(h.recommendation === 'buy') buy.push(h.name); else if(h.recommendation === 'hold') hold.push(h.name); else if(h.recommendation === 'watch') watch.push(h.name)[...];
 
     const comments = [];
     comments.push(`総合スコア: ${score} — 等級: ${grade}`);
     comments.push('テックとハイテクへの比率が高い場合、金利変動リスクに注意してください。');
     comments.push('配当利回りの高い銘柄はポートフォリオの安定化に寄与します。');
 
-    const report = { grade, aiAnalysis: { grade: (function(){ if(score>=90) return 'A'; if(score>=75) return 'B'; if(score>=60) return 'C'; if(score>=45) return 'D'; return 'E'; })(), diagnosis }, totalAssets: total, dailyPnl: fmtYen(daily), holdings: holdingPercents, sectors: sectorPercents, dividendEval, growthEval, riskEval, aiComment: comments, buy, hold, watch, sell };
+    const report = { grade, aiAnalysis: { grade: (function(){ if(score>=90) return 'A'; if(score>=75) return 'B'; if(score>=60) return 'C'; if(score>=45) return 'D'; return 'E'; })(), diagnosis }[...];
     return report;
   }
 
@@ -227,17 +227,17 @@
   }
 
   // --- AI overlay flow ---
-  function showAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scrollTop = 0; }
+  function showAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); overlay.scroll[...] }
   function hideAIOverlay(){ const overlay = document.getElementById('aiOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
 
-  function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl.textContent = `${Math.round(pct)}%`; const bar = document.querySelector('.progress-bar'); if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct))); }
+  function setProgress(pct){ const fill = document.getElementById('aiProgressFill'); const pctEl = document.getElementById('aiProgressPct'); if(fill) fill.style.width = `${pct}%`; if(pctEl) pctEl[...] }
 
-  function markAgentDone(agentName){ const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card')); const card = cards.find(c => c.getAttribute('data-agent') === agentName); if(card){ const status = card.querySelector('.agent-status'); if(status) status.textContent = 'Completed'; card.classList.add('done'); } }
+  function markAgentDone(agentName){ const cards = Array.from(document.querySelectorAll('#aiAgents .agent-card')); const card = cards.find(c => c.getAttribute('data-agent') === agentName); if(car[...] }
 
   // runAISimulationAndNavigate now accepts a master portfolio object (must exist)
   async function runAISimulationAndNavigate(master){
     showAIOverlay();
-    const steps = [ { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' }, { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' }, { key: 'news', text: 'Checking news...', duration: 900, agent: 'News AI' }, { key: 'risk', text: 'Risk analysis...', duration: 1000, agent: 'Risk AI' }, { key: 'dividend', text: 'Dividend analysis...', duration: 900, agent: 'Dividend AI' }, { key: 'generate', text: 'Generating AI report...', duration: 1100, agent: 'Technical AI' } ];
+    const steps = [ { key: 'loading', text: 'Loading portfolio...', duration: 700, agent: 'Chief AI' }, { key: 'market', text: 'Fetching market data...', duration: 1200, agent: 'Market AI' }, { k[...];
 
     const stepEls = Array.from(document.querySelectorAll('#aiSteps li'));
     stepEls.forEach((el)=> { el.classList.remove('done'); el.classList.remove('active'); el.style.opacity = '0.9'; });
@@ -246,7 +246,7 @@
     let elapsed = 0; setProgress(0); const startTime = Date.now();
     const progInterval = setInterval(()=>{ const now = Date.now(); const t = now - startTime; const pct = Math.min(100, (t / totalDuration) * 100); setProgress(pct); }, 80);
 
-    for(let i=0;i<steps.length;i++){ const st = steps[i]; const el = stepEls[i]; if(el) el.classList.add('active'); await new Promise(r => setTimeout(r, st.duration)); if(el){ el.classList.remove('active'); el.classList.add('done'); } elapsed += st.duration; const pctNow = Math.min(100, (elapsed / totalDuration) * 100); setProgress(pctNow); markAgentDone(st.agent); }
+    for(let i=0;i<steps.length;i++){ const st = steps[i]; const el = stepEls[i]; if(el) el.classList.add('active'); await new Promise(r => setTimeout(r, st.duration)); if(el){ el.classList.remove[...]; }
 
     setProgress(100); clearInterval(progInterval); await new Promise(r => setTimeout(r, 600));
 
@@ -264,8 +264,8 @@
       }
     }
 
-    const members = (usedMaster.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: 'C', growthRank: 'B' }));
-    const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, risk: 0, missions: [] }, members };
+    const members = (usedMaster.holdings || []).map(h => ({ name: h.name || h.ticker || '—', job: 'Support', level: 1, value: Number(h.currentValue)||0, pnl: Number(h.profit)||0, dividendRank: [...] });
+    const data = { guild: { name: 'Imported', rank: 1 }, master: { name: 'Importer', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAssets: 0, dailyProfit: 0, rank: 0, dividendIncome: 0, [...] };
     data.portfolio.totalAssets = calculateTotalAssets(data);
     data.portfolio.dailyProfit = calculateDailyProfit(data);
 
@@ -278,68 +278,48 @@
   // --- First-time setup helpers ---
   function showSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden', 'false'); }
   function hideSetupOverlay(){ const overlay = document.getElementById('setupOverlay'); if(!overlay) return; overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
-  function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAsset[...];
+  function createPlaceholderLedger(){ const placeholder = { guild: { name: 'マイギルド', rank: 1 }, master: { name: 'あなた', level: 1, leadership: 'C' }, portfolio: { cash: 0, totalAsset[...] };
 
-  // ---- UPDATED: chooseScreenshotBtn handler ----
-  const chooseBtn = document.getElementById('chooseScreenshotBtn');
-  if(chooseBtn){
-    chooseBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      // Find the real file input
-      const fileInput = document.getElementById('screenshotFileInput');
+  // ---- UPDATED: screenshot file handling for iOS Safari ----
+  (function setupScreenshotInputHandler(){
+    const fileInput = document.getElementById('screenshotFileInput');
+    if(!fileInput) return;
+
+    fileInput.addEventListener('change', async (ev) => {
       const importStatus = document.getElementById('importStatus');
-      if(!fileInput){
-        console.error('screenshotFileInput not found');
-        if(importStatus) importStatus.textContent = 'ファイル入力が見つかりません';
-        return;
-      }
-
-      // One-time change handler for the selected file
-      const onChange = async (ev) => {
-        try{
-          const files = ev.target.files;
-          if(!files || files.length === 0){
-            // user cancelled — keep overlay open and state unchanged
-            if(importStatus) importStatus.textContent = '選択がキャンセルされました';
-            return;
-          }
-
-          const file = files[0];
-          if(importStatus) importStatus.textContent = '画像を受信しました。インポートを開始します…';
-
-          // Read file as data URL (no OCR)
-          const dataUrl = await new Promise((resolve, reject) => {
-            const fr = new FileReader();
-            fr.onload = () => resolve(fr.result);
-            fr.onerror = (e) => reject(e);
-            fr.readAsDataURL(file);
-          });
-
-          try{ sessionStorage.setItem('paos_import_image', dataUrl); } catch(e){ console.warn('sessionStorage write failed', e); }
-
-          // Create ledger if possible
-          if(window.PAOS && window.PAOS.Ledger && typeof window.PAOS.Ledger.createLedger === 'function'){
-            try{ await window.PAOS.Ledger.createLedger(); } catch(e){ console.error('createLedger failed', e); }
-          }
-
-          if(importStatus) importStatus.textContent = 'インポートをキューに登録しました（OCR未実装）';
-
-        } catch(err){
-          console.error('Error handling selected file', err);
-          if(importStatus) importStatus.textContent = 'インポート中にエラーが発生しました';
-        } finally{
-          // reset input so same file can be selected again
-          try{ fileInput.value = ''; } catch(e){}
+      try{
+        const files = ev.target.files;
+        if(!files || files.length === 0){
+          if(importStatus) importStatus.textContent = '選択がキャンセルされました';
+          return;
         }
-      };
 
-      // Attach once
-      fileInput.addEventListener('change', onChange, { once: true });
+        const file = files[0];
+        if(importStatus) importStatus.textContent = '画像を受信しました。インポートを開始します…';
 
-      // Trigger platform file picker (iOS Safari will open photo picker)
-      try{ fileInput.click(); } catch(e){ console.error('fileInput.click failed', e); if(importStatus) importStatus.textContent = 'ファイルピッカーを開けませんでした'; }
+        const dataUrl = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = (e) => reject(e);
+          fr.readAsDataURL(file);
+        });
+
+        try{ sessionStorage.setItem('paos_import_image', dataUrl); } catch(e){ console.warn('sessionStorage write failed', e); }
+
+        if(window.PAOS && window.PAOS.Ledger && typeof window.PAOS.Ledger.createLedger === 'function'){
+          try{ await window.PAOS.Ledger.createLedger(); } catch(e){ console.error('createLedger failed', e); }
+        }
+
+        if(importStatus) importStatus.textContent = 'インポートをキューに登録しました（OCR未実装）';
+      } catch(err){
+        console.error('Error handling selected file', err);
+        const importStatus = document.getElementById('importStatus');
+        if(importStatus) importStatus.textContent = 'インポート中にエラーが発生しました';
+      } finally{
+        try{ ev.target.value = ''; } catch(e){}
+      }
     });
-  }
+  })();
 
   // Initialize
   window.addEventListener('load', async ()=>{
@@ -354,7 +334,7 @@
 
     if(startBtn) startBtn.addEventListener('click', startPortfolioAI);
     if(floating) floating.addEventListener('click', startPortfolioAI);
-    document.querySelectorAll('.nav-item').forEach(it=>{ it.addEventListener('click', ()=>{ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); it.classList.add('active'); }); });
+    document.querySelectorAll('.nav-item').forEach(it=>{ it.addEventListener('click', ()=>{ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); it.classList.add('acti[...]');
   });
 
   window.paos = { loadPortfolio, savePortfolio, calculateTotalAssets, calculateDailyProfit, calculatePortfolioScore, requestDetailedReport };
