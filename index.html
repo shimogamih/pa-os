@@ -167,11 +167,11 @@
 
     <!-- Visible button -->
     <div class="setup-actions">
-      <button id="chooseScreenshotBtn" class="btn" type="button">スクリーンショットを選択</button>
+      <label for="screenshotFileInput" id="chooseScreenshotBtn" class="btn">スクリーンショットを選択</label>
     </div>
 
-    <!-- Hidden but focusable file input (not display:none) for iOS Safari -->
-    <input id="screenshotFileInput" type="file" accept="image/*" capture="environment" style="opacity:0; position:absolute; width:1px; height:1px; left:0; top:0;" />
+    <!-- Hidden file input (label[for] triggers picker reliably on iOS Safari) -->
+    <input id="screenshotFileInput" type="file" accept="image/*" capture="environment" style="display:none" />
 
     <!-- Import status -- kept in overlay; updated by script -->
     <div id="importStatus" class="setup-status" aria-live="polite" style="margin-top:12px; color:#ccc;"></div>
