@@ -1,159 +1,98 @@
-/* style.css — PA-OS v3 ダークファンタジー RPG 指令センター
-   モバイルファースト、iPhone Safari 対応
-*/
+/* style.css — Dark fantasy responsive theme for PA-OS */
 :root{
-  --bg:#0a0a10;
-  --panel:#0e0f13;
-  --muted:rgba(230,230,235,0.7);
-  --accent1:#7a4ef0;
-  --accent2:#2dd4bf;
-  --glass: rgba(255,255,255,0.03);
-  --card-shadow: 0 10px 40px rgba(0,0,0,0.6);
-  --glass-border: rgba(255,255,255,0.04);
-  --radius:14px;
-  font-family: Inter, system-ui, -apple-system, 'Helvetica Neue', 'Noto Sans JP', sans-serif;
+  --bg:#0b0b0b;
+  --panel:#121212;
+  --muted:#9aa0a6;
+  --accent:#8b5cf6; /* purple accent */
+  --card:#0f0f0f;
+  --glass: rgba(255,255,255,0.02);
 }
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
+html,body{
+  height:100%;
   margin:0;
-  background: radial-gradient(900px 400px at 10% 15%, rgba(122,78,240,0.06), transparent), radial-gradient(700px 300px at 90% 85%, rgba(45,212,191,0.03), transparent), var(--bg);
-  color:#e6e7eb;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg,#070707 0%, #0d0d0d 100%);
+  color:#e6e6e6;
   -webkit-font-smoothing:antialiased;
-  line-height:1.35;
-  padding-bottom:calc(86px + env(safe-area-inset-bottom)); /* 下部ナビ + フローティングの余白 */
-  position:relative;
-  overflow-x:hidden; /* prevent horizontal overflow */
-  -webkit-overflow-scrolling: touch;
+  -moz-osx-font-smoothing:grayscale;
 }
-/* Make images and svgs responsive to avoid overflow */
-img, svg, canvas { max-width:100%; height:auto; display:block; }
+.app{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 20px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  backdrop-filter: blur(2px);
+}
+.title{
+  font-size:20px;
+  letter-spacing:1px;
+  margin:0;
+}
+.container{
+  display:flex;
+  gap:20px;
+  padding:20px;
+  flex:1 1 auto;
+}
+.left-panel{flex:0 0 320px; display:flex;flex-direction:column; gap:20px}
+.right-panel{flex:1 1 auto; display:flex; flex-direction:column; gap:20px}
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+  border:1px solid rgba(255,255,255,0.03);
+  padding:16px;
+  border-radius:12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+}
+.guild-master .avatar-placeholder{
+  width:100%; height:120px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#0d0d0d,#151515); border-radius:8px; font-weight:700; font-size:28px;
+}
+.members-list{list-style:none; padding:0; margin:8px 0 0 0; display:flex; flex-direction:column; gap:8px}
+.members-list li{padding:8px; background:var(--glass); border-radius:8px}
+.cards-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px}
+.dashboard-card .large{font-size:20px; font-weight:700}
+.upload-card .file-label{display:inline-block}
+.file-label input[type="file"]{display:none}
+.file-btn{display:inline-block; padding:10px 12px; background:linear-gradient(90deg,var(--accent), #6d28d9); color:white; border-radius:8px; cursor:pointer}
+.preview{margin-top:12px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.02); min-height:80px; display:flex; align-items:center; justify-content:center}
+.preview img{max-width:100%; height:auto; display:block}
+.import-status{margin-top:8px; color:var(--accent); font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.btn{padding:8px 12px; border-radius:8px; background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04); cursor:pointer}
+.btn.secondary{background:rgba(255,255,255,0.02)}
+.btn.muted{color:var(--muted)}
+.ocr-area{margin-top:12px; display:flex; gap:12px; align-items:center}
+.footer{padding:12px 20px; text-align:center}
 
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);position:relative;z-index:50}
-.branding{display:flex;gap:12px;align-items:center;min-width:0}
-.crest{font-weight:800;font-size:0.95rem}
-.branding h1{font-size:1rem;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sub{font-size:0.78rem;color:var(--muted)}
-.start-btn{background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#061018;padding:8px 10px;border-radius:10px;border:none;font-weight:700;cursor:pointer;flex-shrink:0;z-index:60}
-.container{padding:12px 16px;max-width:1100px;margin:0 auto;width:100%}
-/* カード共通 */
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid var(--glass-border);border-radius:14px;padding:10px;margin-bottom:10px;box-shadow:var(--card-shadow);overflow:hidden}
-.card-header{display:flex;justify-content:space-between;align-items:baseline}
-.card-header h2{margin:0;font-size:1rem}
-.card-header small{color:var(--muted);font-size:0.78rem}
-.card-body{margin-top:8px}
-.big-value{font-size:1.2rem;font-weight:800}
-.trend.up{color:#7ef3b7}
-.trend.down{color:#fb7185}
-.rank-big{font-size:1.4rem;font-weight:800}
-.small{color:var(--muted);font-size:0.86rem;margin-top:6px}
-/* ダッシュボードグリッド */
-.dashboard-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px}
-@media(min-width:720px){.dashboard-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1080px){.dashboard-grid{grid-template-columns:repeat(3,1fr)}}
-/* ギルドマスター */
-.master-card .master-name{font-weight:700}
-.master-meta{color:var(--muted);font-size:0.9rem;margin-top:6px}
-/* メンバーグリッド */
-.members-section{margin-top:6px}
-.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.members-grid{display:grid;grid-template-columns:1fr;gap:8px}
-@media(min-width:720px){.members-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1080px){.members-grid{grid-template-columns:repeat(3,1fr)}}
-.member-card{display:flex;gap:10px;align-items:flex-start;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
-.avatar{width:64px;height:64px;flex-shrink:0;border-radius:12px;position:relative;display:flex;align-items:center;justify-content:center}
-.avatar.two-head{background:linear-gradient(135deg,var(--accent1),#5dbfb0);} 
-.avatar.two-head .head{position:absolute;width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#fff,rgba(255,255,255,0.07));opacity:0.95;box-shadow:0 6px 12px rgba(0,0,0,0.45)}
-.avatar.two-head .head.left{left:8px;top:14px;transform:translateX(-6px)}
-.avatar.two-head .head.right{right:8px;top:8px;transform:translateX(6px)}
-.member-body{flex:1;min-width:0}
-.m-top{display:flex;justify-content:space-between;align-items:center}
-.stock{font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.job{font-size:13px;color:var(--muted)}
-.m-stats{display:flex;flex-direction:column;gap:6px;margin-top:6px}
-.value{font-weight:700}
-.pnl.up{color:#7ef3b7}
-.pnl.down{color:#fb7185}
-.m-meta{margin-top:6px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
-/* ミッション */
-.mission-list{list-style:none;padding:0;margin:0}
-.mission-list li{padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
-.mission-list input[type="checkbox"]{transform:scale(1.05);margin-right:8px}
-/* ボスカード */
-.boss-card .boss-weakness{color:#fb7185;font-weight:700;margin-bottom:6px}
-.ai-recommend{margin-top:6px;color:var(--muted)}
-/* 下部ナビ */
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;height:72px;padding-bottom:env(safe-area-inset-bottom);display:flex;gap:6px;align-items:center;justify-content:space-around;background:linear-gradient(180deg,rgba(0,0,0,0.35),rgba(0,0,0,0.6));backdrop-filter:blur(6px);z-index:80}
-.nav-item{background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;font-size:12px;padding:8px;cursor:pointer}
-.nav-item span{font-size:11px;margin-top:6px}
-.nav-item.active{color:var(--accent2)}
-.footer{display:none}
-/* 浮動起動ボタン */
-.floating-start{position:fixed;right:16px;bottom:calc(110px + env(safe-area-inset-bottom));background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#061018;border:none;padding:12px 14px;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,0.6);z-index:90}
-/* アニメーション */
-[data-anim]{opacity:0;transform:translateY(8px);transition:all .48s cubic-bezier(.2,.9,.3,1)}
-[data-anim].awake{opacity:1;transform:none}
-/* iPhone Safari 対応 */
-@supports(padding: max(0px)){
-  .container{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+/* Modal */
+.modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8)); z-index:60; padding:20px;}
+.modal[aria-hidden="true"]{display:none}
+.modal-sheet{width:100%; max-width:420px; background:var(--panel); padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.03)}
+
+/* iPhone / Safari specific tweaks */
+html,body{height:100%}
+.container{ -webkit-overflow-scrolling: touch; }
+@supports(padding: max(0px)){ /* safe area */
+  .container{ padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)); }
 }
 
-/* Additional styles for report page */
-.report-block{margin-top:8px}
-.rule{border-top:1px solid rgba(255,255,255,0.03);margin:8px 0}
-.report-grid{display:grid;grid-template-columns:1fr;gap:8px}
-@media(min-width:720px){.report-grid{grid-template-columns:repeat(2,1fr)}}
-.section{padding:10px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
-.big-eval{font-size:18px;font-weight:800;color:#ffd54a}
-.sub-eval{font-size:16px;font-weight:700}
-.hold-list{display:flex;flex-direction:column;gap:8px}
-.hold-card{display:flex;flex-direction:column;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02)}
-.hold-meta{display:flex;justify-content:space-between;gap:8px}
-.bottom-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.btn{background:linear-gradient(135deg,var(--accent1),var(--accent2));padding:8px 10px;border-radius:10px;color:#061018;border:none;font-weight:700;cursor:pointer;min-width:0}
-.btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
-.badge{display:inline-block;padding:6px 8px;border-radius:999px;font-weight:700;color:#061018;margin-left:8px;font-size:0.86rem}
-.badge.buy{background:#34d399}
-.badge.hold{background:#fbbf24}
-.badge.watch{background:#fb923c}
-.badge.sell{background:#fb7185}
-
-/* small responsive tweaks */
-@media(max-width:420px){
-  .card{padding:10px}
-  .btn{padding:8px 10px;font-size:0.92rem}
-  .branding h1{font-size:0.95rem}
-  .avatar{width:56px;height:56px}
-  .card-body{margin-top:6px}
-  .container{padding-left:12px;padding-right:12px}
-  .start-btn{padding:8px 10px;font-size:14px}
-  .floating-start{right:12px;bottom:calc(96px + env(safe-area-inset-bottom));padding:10px 12px}
-  /* reduce vertical gaps */
-  .dashboard-grid{gap:6px}
-  .members-grid{gap:6px}
-  .mission-list li{padding:6px 0}
+/* Responsive */
+@media (max-width:900px){
+  .container{flex-direction:column}
+  .left-panel{flex-direction:row; gap:12px; overflow:auto}
+  .left-panel .card{min-width:160px}
 }
-
-/* Ensure overlays fit and are scrollable on small screens (welcome/setup, ai overlay) */
-.setup-overlay, .ai-overlay{
-  display:none;align-items:center;justify-content:center;position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);z-index:1500;background:linear-gradient(180deg, rgba(2,6,12,0.92), rgba(2,6,12,0.96));-webkit-overflow-scrolling:touch;
-}
-.setup-inner, .ai-overlay .ai-overlay-inner{
-  width:100%;max-width:720px;margin:18px;padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);color:#e6f1f6;box-shadow:0 10px 30px rgba(0,0,0,0.6);max-height:calc(100vh - 140px - env(safe-area-inset-bottom));overflow:auto;
-}
-.setup-title{font-size:18px;margin:8px 0;font-weight:800;color:var(--accent2)}
-.setup-desc{margin:8px 0;color:var(--muted);font-size:15px}
-.setup-note{margin:6px 0 12px 0;color:var(--muted);font-size:13px}
-.setup-actions{display:flex;justify-content:center;gap:12px}
-
-/* Prevent long words from causing overflow */
-*{word-wrap:break-word;overflow-wrap:break-word}
-
-/* Keep desktop layout unchanged; further tweaks only apply under 720px */
-@media(max-width:720px){
-  /* Ensure all sections fit within viewport width */
-  .container, .setup-inner, .ai-overlay .ai-overlay-inner{padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));}
-  /* Make sure topbar elements shrink instead of overflowing */
-  .branding{min-width:0}
-  .branding h1{max-width:55vw}
+@media (max-width:420px){
+  .left-panel{flex:0 0 auto}
+  .topbar{padding:12px}
+  .title{font-size:18px}
+  .file-btn{padding:10px}
 }

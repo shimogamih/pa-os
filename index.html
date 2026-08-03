@@ -1,186 +1,107 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>PA-OS v3 - ポートフォリオエンジン</title>
-<link rel="stylesheet" href="./style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>PA-OS — Dark Fantasy Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Tesseract.js placeholder (loaded but not used for analysis yet) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js"></script>
 </head>
 <body>
-<header class="topbar">
-  <div class="branding">
-    <div class="crest" aria-hidden="true">ポートフォリオOS</div>
-    <div>
-      <h1>ポートフォリオOS</h1>
-      <div class="sub">ポートフォリオAI運用センター</div>
-    </div>
-  </div>
-  <button id="startBtn" class="start-btn">🚀 ポートフォリオAI 起動</button>
-</header>
+  <div id="app" class="app">
+    <header class="topbar">
+      <h1 class="title">PA-OS</h1>
+      <nav class="meta">
+        <button id="open-import" class="btn">Import Portfolio</button>
+      </nav>
+    </header>
 
-<main class="container">
-
-  <!-- ギルドマスター -->
-  <section class="card master-card" data-anim>
-    <div class="card-header"><h2>👑 ギルドマスター</h2><small>マスターの指令</small></div>
-    <div class="card-body">
-      <div id="masterName" class="master-name">マスター: —</div>
-      <div id="masterMeta" class="master-meta">レベル: — ・ 指揮力: —</div>
-    </div>
-  </section>
-
-  <!-- ギルド -->
-  <section class="card guild-card" data-anim>
-    <div class="card-header"><h2>🏰 ギルド</h2><small>同盟概要</small></div>
-    <div class="card-body">
-      <div id="guildName" class="guild-name">—</div>
-      <div id="guildRank" class="rank">—</div>
-    </div>
-  </section>
-
-  <!-- ダッシュボード -->
-  <section class="dashboard-grid">
-    <article class="card" data-anim>
-      <div class="card-header"><h2>💰 総資産</h2><small>保有資産の合計</small></div>
-      <div class="card-body">
-        <div id="totalAssets" class="big-value">—</div>
-        <div id="assetsTrend" class="trend up">—</div>
-      </div>
-    </article>
-
-    <article class="card" data-anim>
-      <div class="card-header"><h2>📈 本日の損益</h2><small>評価損益合計</small></div>
-      <div class="card-body">
-        <div id="dailyPnl" class="big-value profit">—</div>
-        <div id="dailyNote" class="small">—</div>
-      </div>
-    </article>
-
-    <article class="card" data-anim>
-      <div class="card-header"><h2>⚔ パーティー評価</h2><small>構成の強さ</small></div>
-      <div class="card-body">
-        <div id="partyRank" class="rank-big">—</div>
-        <div id="partyNote" class="small">—</div>
-      </div>
-    </article>
-
-    <article class="card" data-anim>
-      <div class="card-header"><h2>💸 配当収入</h2><small>月次推定</small></div>
-      <div class="card-body">
-        <div id="dividendIncome" class="big-value">—</div>
-        <div id="dividendNote" class="small">—</div>
-      </div>
-    </article>
-
-    <article class="card" data-anim>
-      <div class="card-header"><h2>⚖️ リスク評価</h2><small>ポートフォリオのボラティリティ</small></div>
-      <div class="card-body">
-        <div class="radial">
-          <svg viewBox="0 0 42 42"><circle r="15.9" cx="21" cy="21" class="bg"/><circle id="riskMeter" r="15.9" cx="21" cy="21" class="meter"/></svg>
-          <div id="riskLabel" class="radial-label">—</div>
+    <main class="container">
+      <section class="left-panel">
+        <div class="card guild-master">
+          <h2>Guild Master</h2>
+          <div id="guild-master-avatar" class="avatar-placeholder">GM</div>
+          <p class="muted">Leader of the guild. Tracks overall progress.</p>
         </div>
-        <div id="riskNote" class="small">—</div>
-      </div>
-    </article>
 
-    <article class="card" data-anim>
-      <div class="card-header"><h2>📜 今日のミッション</h2><small>AI提案</small></div>
-      <div class="card-body">
-        <ul id="missionList" class="mission-list">
-          <!-- ミッションはストレージから生成されます -->
-        </ul>
-      </div>
-    </article>
-  </section>
+        <div class="card guild-members">
+          <h2>Guild Members</h2>
+          <ul id="members-list" class="members-list">
+            <li>Member A</li>
+            <li>Member B</li>
+            <li>Member C</li>
+          </ul>
+        </div>
 
-  <!-- ギルドメンバー -->
-  <section class="members-section">
-    <div class="section-header"><h2>👥 ギルドメンバー</h2><small>冒険者と資産</small></div>
-    <div id="membersGrid" class="members-grid">
-      <!-- メンバーカードはストレージから生成されます -->
-    </div>
-  </section>
+        <div class="card boss">
+          <h2>Boss</h2>
+          <p class="muted">The looming market boss. Prepare your strategy.</p>
+        </div>
+      </section>
 
-  <!-- ボスカード -->
-  <section class="card boss-card" data-anim>
-    <div class="card-header"><h2>👑 今日のボス</h2><small>最大リスクと対処</small></div>
-    <div class="card-body">
-      <div id="bossRisk" class="boss-weakness">—</div>
-      <div id="bossWeakness" class="boss-weakness">—</div>
-      <div id="bossStrategy" class="ai-recommend">—</div>
-    </div>
-  </section>
+      <section class="right-panel">
+        <div class="cards-grid">
+          <div class="card dashboard-card">
+            <h3>Portfolio Value</h3>
+            <p class="large" id="portfolio-value">—</p>
+          </div>
+          <div class="card dashboard-card">
+            <h3>Daily Change</h3>
+            <p class="large" id="daily-change">—</p>
+          </div>
+          <div class="card dashboard-card">
+            <h3>Open P&L</h3>
+            <p class="large" id="open-pl">—</p>
+          </div>
+          <div class="card dashboard-card">
+            <h3>Cash</h3>
+            <p class="large" id="cash">—</p>
+          </div>
+        </div>
 
-</main>
+        <div class="card upload-card">
+          <h2>Portfolio Screenshot</h2>
+          <p class="muted">Upload a screenshot to import your portfolio. Works on iPhone.</p>
 
-<!-- 浮動起動ボタン -->
-<button id="floatingStart" class="floating-start">ポートフォリオAI 起動</button>
+          <label for="screenshot-input" class="file-label">
+            <input id="screenshot-input" type="file" accept="image/*" capture="environment" />
+            <span class="file-btn">Choose or Take Photo</span>
+          </label>
 
-<!-- 下部ナビ (日本語) -->
-<nav class="bottom-nav" role="navigation" aria-label="メイン">
-  <button class="nav-item active" data-nav="ホーム">🏠<span>ホーム</span></button>
-  <button class="nav-item" data-nav="ギルド">🏰<span>ギルド</span></button>
-  <button class="nav-item" data-nav="資産">💼<span>資産</span></button>
-  <button class="nav-item" data-nav="市場">📈<span>市場</span></button>
-  <button class="nav-item" data-nav="ポートフォリオAI">🤖<span>ポートフォリオAI</span></button>
-</nav>
+          <div id="preview" class="preview" aria-live="polite"></div>
+          <div id="import-status" class="import-status"></div>
 
-<footer class="footer">ポートフォリオOS v3</footer>
+          <div class="ocr-area">
+            <button id="ocr-btn" class="btn muted">Run OCR (placeholder)</button>
+            <div id="ocr-status" class="muted small">OCR: ready (placeholder)</div>
+          </div>
+        </div>
+      </section>
+    </main>
 
-<!-- AI Loading Overlay (added earlier) -->
-<div id="aiOverlay" class="ai-overlay" style="display:none" aria-hidden="true">
-  <div class="ai-overlay-inner">
-    <div class="overlay-title">Portfolio AI is analyzing your portfolio...</div>
-    <ul id="aiSteps" class="ai-steps">
-      <li data-step="loading">Loading portfolio...</li>
-      <li data-step="market">Fetching market data...</li>
-      <li data-step="news">Checking news...</li>
-      <li data-step="risk">Risk analysis...</li>
-      <li data-step="dividend">Dividend analysis...</li>
-      <li data-step="generate">Generating AI report...</li>
-    </ul>
+    <footer class="footer muted">
+      <small>Dark Fantasy UI — PA-OS</small>
+    </footer>
+  </div>
 
-    <div class="progress-wrap">
-      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-        <div id="aiProgressFill" class="progress-fill" style="width:0%"></div>
-      </div>
-      <div id="aiProgressPct" class="progress-pct">0%</div>
-    </div>
+  <!-- Portfolio Import modal (shows on first launch) -->
+  <div id="import-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-sheet">
+      <h2>Import Portfolio</h2>
+      <p class="muted">To get started, import a portfolio screenshot. We'll save it locally on your device.</p>
 
-    <div id="aiAgents" class="agents-grid">
-      <div class="agent-card" data-agent="Chief AI"><div class="agent-name">Chief AI</div><div class="agent-status">Running...</div></div>
-      <div class="agent-card" data-agent="Market AI"><div class="agent-name">Market AI</div><div class="agent-status">Running...</div></div>
-      <div class="agent-card" data-agent="News AI"><div class="agent-name">News AI</div><div class="agent-status">Running...</div></div>
-      <div class="agent-card" data-agent="Risk AI"><div class="agent-name">Risk AI</div><div class="agent-status">Running...</div></div>
-      <div class="agent-card" data-agent="Dividend AI"><div class="agent-name">Dividend AI</div><div class="agent-status">Running...</div></div>
-      <div class="agent-card" data-agent="Technical AI"><div class="agent-name">Technical AI</div><div class="agent-status">Running...</div></div>
+      <label for="modal-screenshot" class="file-label">
+        <input id="modal-screenshot" type="file" accept="image/*" capture="environment" />
+        <span class="file-btn">Select Screenshot</span>
+      </label>
+
+      <div id="modal-status" class="import-status"></div>
+      <button id="modal-close" class="btn secondary">Later</button>
     </div>
   </div>
-</div>
 
-<!-- First-time setup overlay (hidden by default) -->
-<div id="setupOverlay" class="setup-overlay" style="display:none" aria-hidden="true">
-  <div class="setup-inner" style="position:relative;">
-    <h2 class="setup-title">Portfolio Import</h2>
-    <p class="setup-desc">「ポートフォリオのスクリーンショットをアップロードしてください」</p>
-    <p class="setup-note">「初回のみ必要です」</p>
-
-    <!-- Visible button -->
-    <div class="setup-actions">
-      <button id="chooseScreenshotBtn" class="btn" type="button">スクリーンショットを選択</button>
-    </div>
-
-    <!-- Hidden but focusable file input (not display:none) for iOS Safari -->
-    <input id="screenshotFileInput" type="file" accept="image/*" capture="environment" style="opacity:0; position:absolute; width:1px; height:1px; left:0; top:0;" />
-
-    <!-- Import status -- kept in overlay; updated by script -->
-    <div id="importStatus" class="setup-status" aria-live="polite" style="margin-top:12px; color:#ccc;"></div>
-  </div>
-</div>
-
-<!-- Tesseract.js for OCR (kept but OCR is not implemented yet) -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
-
-<script src="./script.js" defer></script>
+  <script src="script.js"></script>
 </body>
 </html>
