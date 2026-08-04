@@ -2,6 +2,7 @@
 (function(){
   const IMPORT_FLAG = 'paos_imported_v1';
   const SCREENSHOT_KEY = 'paos_screenshot_v1';
+  const OCR_KEY = 'portfolio_ocr';
 
   const modal = document.getElementById('import-modal');
   const modalStatus = document.getElementById('modal-status');
@@ -21,9 +22,11 @@
     if(!imported){
       showModal();
     } else {
-      // if screenshot present, show preview
+      // if screenshot present, show preview and OCR text
       const data = localStorage.getItem(SCREENSHOT_KEY);
       if(data) showPreviewFromDataURL(data);
+      const savedOCR = localStorage.getItem(OCR_KEY);
+      if(savedOCR) showOCRResult(savedOCR);
     }
   }
 
@@ -41,19 +44,43 @@
     hideModal();
   });
 
+  // Create or get OCR result container (below preview)
+  function getOCRContainer(){
+    let el = document.getElementById('ocr-result');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'ocr-result';
+      el.className = 'card ocr-result';
+      el.style.marginTop = '12px';
+      el.innerHTML = '<h3>Extracted Text</h3><pre id="ocr-text" style="white-space:pre-wrap; word-break:break-word; margin:0; padding:8px; background:rgba(0,0,0,0.2); border-radius:8px"></pre>';
+      // insert after preview
+      if(preview && preview.parentNode){
+        preview.parentNode.insertBefore(el, preview.nextSibling);
+      }
+    }
+    return el;
+  }
+
+  function showOCRResult(text){
+    const container = getOCRContainer();
+    const pre = document.getElementById('ocr-text');
+    if(pre) pre.textContent = text;
+  }
+
   // Unified handler for file inputs
-  function handleFileInput(file, statusElement, showComplete=true){
+  async function handleFileInput(file, statusElement, showComplete=true){
     if(!file) return;
-    statusElement.textContent = 'Importing...';
+    statusElement.textContent = 'Importing Portfolio...';
+    ocrStatus.textContent = 'OCR: pending...';
 
     // Use FileReader to get data URL, then re-encode via canvas for compatibility (iOS fix)
     const reader = new FileReader();
-    reader.onload = function(e){
+    reader.onload = async function(e){
       const dataURL = e.target.result;
 
       // Create image and draw to canvas to ensure orientation & reliability across Safari
       const img = new Image();
-      img.onload = function(){
+      img.onload = async function(){
         try{
           const canvas = document.createElement('canvas');
           const maxW = Math.min(img.width, 2000);
@@ -74,13 +101,27 @@
 
           showPreviewFromDataURL(outData);
 
-          // Mark import complete on first-launch
-          localStorage.setItem(IMPORT_FLAG, 'imported');
-
-          if(showComplete){
+          // Run OCR automatically
+          try{
+            const ocrText = await runOCR(outData);
+            // Save OCR result
+            try{
+              localStorage.setItem(OCR_KEY, ocrText);
+            } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
+            showOCRResult(ocrText);
+            // Mark import complete on first-launch
+            localStorage.setItem(IMPORT_FLAG, 'imported');
+            if(showComplete){
+              statusElement.textContent = 'Import Complete';
+            } else {
+              statusElement.textContent = 'Saved';
+            }
+          } catch(err){
+            console.error('OCR failed', err);
+            ocrStatus.textContent = 'OCR failed';
+            // still mark imported
+            localStorage.setItem(IMPORT_FLAG, 'imported');
             statusElement.textContent = 'Import Complete';
-          } else {
-            statusElement.textContent = 'Saved';
           }
 
         } catch(err){
@@ -89,6 +130,12 @@
           try{
             localStorage.setItem(SCREENSHOT_KEY, dataURL);
             showPreviewFromDataURL(dataURL);
+            // Try OCR on raw data
+            try{
+              const ocrText = await runOCR(dataURL);
+              localStorage.setItem(OCR_KEY, ocrText);
+              showOCRResult(ocrText);
+            } catch(e){ console.warn('OCR on raw data failed', e); }
             localStorage.setItem(IMPORT_FLAG, 'imported');
             statusElement.textContent = 'Import Complete';
           } catch(e){
@@ -97,11 +144,16 @@
         }
       };
 
-      img.onerror = function(){
-        // fallback: store dataURL directly
+      img.onerror = async function(){
+        // fallback: store dataURL directly and attempt OCR
         try{
           localStorage.setItem(SCREENSHOT_KEY, dataURL);
           showPreviewFromDataURL(dataURL);
+          try{
+            const ocrText = await runOCR(dataURL);
+            localStorage.setItem(OCR_KEY, ocrText);
+            showOCRResult(ocrText);
+          } catch(e){ console.warn('OCR on error fallback failed', e); }
           localStorage.setItem(IMPORT_FLAG, 'imported');
           statusElement.textContent = 'Import Complete';
         } catch(e){
@@ -109,7 +161,6 @@
         }
       };
 
-      // iOS Safari fix: setting crossOrigin may prevent tainting; not strictly needed here
       img.src = dataURL;
 
     };
@@ -125,6 +176,29 @@
     preview.appendChild(img);
   }
 
+  async function runOCR(dataURL){
+    if(!window.Tesseract){
+      ocrStatus.textContent = 'OCR library not available.';
+      return '';
+    }
+    ocrStatus.textContent = 'OCR: running...';
+    let lastProgress = 0;
+    const result = await window.Tesseract.recognize(dataURL, 'eng', {
+      logger: m => {
+        if(m && m.status && typeof m.progress === 'number'){
+          const pct = Math.round(m.progress * 100);
+          if(pct !== lastProgress){
+            lastProgress = pct;
+            ocrStatus.textContent = `OCR: ${pct}% (${m.status})`;
+          }
+        }
+      }
+    });
+    const text = (result && result.text) ? result.text : '';
+    ocrStatus.textContent = 'OCR: done';
+    return text;
+  }
+
   input.addEventListener('change', function(e){
     const file = e.target.files && e.target.files[0];
     handleFileInput(file, importStatus, true);
@@ -137,19 +211,19 @@
     setTimeout(()=> hideModal(), 1000);
   });
 
-  // OCR placeholder — prepare Tesseract if available but do not run heavy work
+  // OCR placeholder button now triggers OCR again on saved image
   ocrBtn.addEventListener('click', async function(){
     const data = localStorage.getItem(SCREENSHOT_KEY);
     if(!data){ ocrStatus.textContent = 'No screenshot to OCR.'; return; }
-    ocrStatus.textContent = 'OCR: preparing (placeholder)';
-
-    // Placeholder hook: Tesseract loaded and hooked but we DO NOT perform recognition now
-    if(window.Tesseract){
-      // Example placeholder: create a worker variable for future use
-      window._paos_ocr_worker = window._paos_ocr_worker || null;
-      ocrStatus.textContent = 'OCR ready (placeholder). Tesseract loaded.';
-    } else {
-      ocrStatus.textContent = 'OCR library not loaded.';
+    ocrStatus.textContent = 'OCR: running (manual)';
+    try{
+      const ocrText = await runOCR(data);
+      localStorage.setItem(OCR_KEY, ocrText);
+      showOCRResult(ocrText);
+      ocrStatus.textContent = 'OCR complete (manual)';
+    } catch(err){
+      console.error('Manual OCR failed', err);
+      ocrStatus.textContent = 'OCR failed';
     }
   });
 
