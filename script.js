@@ -5,11 +5,11 @@
 
   const modal = document.getElementById('import-modal');
   const modalStatus = document.getElementById('modal-status');
-  const modalInput = document.getElementById('modal-screenshot');
+  const modalInput = document.getElementById('modalScreenshotFileInput');
   const modalClose = document.getElementById('modal-close');
   const openImportBtn = document.getElementById('open-import');
 
-  const input = document.getElementById('screenshot-input');
+  const input = document.getElementById('screenshotFileInput');
   const preview = document.getElementById('preview');
   const importStatus = document.getElementById('import-status');
   const ocrBtn = document.getElementById('ocr-btn');
