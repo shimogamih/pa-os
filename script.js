@@ -1,8 +1,9 @@
-// script.js — handles import, screenshot upload, iPhone compatibility, and localStorage
+// script.js — handles import, screenshot upload, iPhone compatibility, OCR workflow, and localStorage
 (function(){
   const IMPORT_FLAG = 'paos_imported_v1';
   const SCREENSHOT_KEY = 'paos_screenshot_v1';
   const OCR_KEY = 'portfolio_ocr';
+  const LEDGER_KEY = 'portfolio_ledger';
 
   const modal = document.getElementById('import-modal');
   const modalStatus = document.getElementById('modal-status');
@@ -27,6 +28,11 @@
       if(data) showPreviewFromDataURL(data);
       const savedOCR = localStorage.getItem(OCR_KEY);
       if(savedOCR) showOCRResult(savedOCR);
+      // If OCR exists but ledger missing, try to generate ledger
+      const ledger = localStorage.getItem(LEDGER_KEY);
+      if(savedOCR && !ledger){
+        generateLedgerFromOCR();
+      }
     }
   }
 
@@ -65,6 +71,108 @@
     const container = getOCRContainer();
     const pre = document.getElementById('ocr-text');
     if(pre) pre.textContent = text;
+  }
+
+  // Basic parsing helpers
+  function numberFromString(s){
+    if(!s) return null;
+    const n = s.replace(/,/g,'').match(/[+-]?\d*\.?\d+/);
+    return n ? parseFloat(n[0]) : null;
+  }
+
+  function parseOCRLine(line){
+    // Attempt to extract code, name, and up to 4 numeric values
+    // Remove common separators
+    const cleaned = line.replace(/\u2013|\u2014|–/g,'-');
+    // Find code in parentheses like "Name (CODE)" or trailing code tokens
+    let codeMatch = cleaned.match(/\(([^)]+)\)/);
+    let code = codeMatch ? codeMatch[1].trim() : null;
+
+    // Tokenize
+    const tokens = cleaned.split(/\s+/).filter(Boolean);
+
+    // Extract numbers from line
+    const numbers = (cleaned.match(/[+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+\.\d+/g) || []).map(s=>s.replace(/,/g,''));
+
+    // Heuristics: assume numbers correspond to shares, avgPrice, currentPrice, profitLoss
+    let shares = null, avgPrice = null, currentPrice = null, profitLoss = null;
+    if(numbers.length >= 1) shares = numberFromString(numbers[0]);
+    if(numbers.length >= 2) avgPrice = numberFromString(numbers[1]);
+    if(numbers.length >= 3) currentPrice = numberFromString(numbers[2]);
+    if(numbers.length >= 4) profitLoss = numberFromString(numbers[3]);
+
+    // Try to detect code token if not found: uppercase alnum token with 1-6 chars
+    if(!code){
+      for(let t of tokens){
+        if(/^\(?[A-Z0-9.\-]{2,6}\)?$/.test(t)){
+          const c = t.replace(/[^A-Z0-9.\-]/gi,'');
+          if(/\d/.test(c) || /[A-Z]/i.test(c)){
+            code = c; break;
+          }
+        }
+      }
+    }
+
+    // Name: take leading text up to first number or code token
+    let name = '';
+    const numIndex = tokens.findIndex(t => /[0-9]/.test(t));
+    const codeIndex = tokens.findIndex(t => code && t.includes(code));
+    let cutIndex = tokens.length;
+    if(numIndex !== -1) cutIndex = Math.min(cutIndex, numIndex);
+    if(codeIndex !== -1) cutIndex = Math.min(cutIndex, codeIndex);
+    if(cutIndex > 0){
+      name = tokens.slice(0, cutIndex).join(' ');
+    } else {
+      name = cleaned.replace(/\([^)]*\)/g,'').replace(/[0-9.,+-]/g,'').trim();
+    }
+
+    // If profitLoss missing but avg/current present compute it
+    if(profitLoss === null && shares !== null && avgPrice !== null && currentPrice !== null){
+      profitLoss = (currentPrice - avgPrice) * shares;
+    }
+
+    // Normalize values
+    function maybeNumber(v){ return (v === null || v === undefined || isNaN(v)) ? null : Number(v); }
+
+    return {
+      name: name || null,
+      code: code || null,
+      shares: maybeNumber(shares),
+      avgPrice: maybeNumber(avgPrice),
+      currentPrice: maybeNumber(currentPrice),
+      profitLoss: maybeNumber(profitLoss)
+    };
+  }
+
+  function generateLedgerFromOCR(){
+    const ocr = localStorage.getItem(OCR_KEY) || '';
+    if(!ocr){
+      importStatus.textContent = 'No OCR text available to generate ledger.';
+      return null;
+    }
+    const lines = ocr.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
+    const entries = [];
+    for(const line of lines){
+      // Skip lines that are clearly headings or totals
+      if(/^total/i.test(line) || /^value/i.test(line) || /^cash/i.test(line)) continue;
+      const parsed = parseOCRLine(line);
+      // Require at least a code or numbers to include
+      if(parsed.name || parsed.code || parsed.shares || parsed.avgPrice || parsed.currentPrice || parsed.profitLoss){
+        // Basic sanity: ignore lines with no numeric data and no code
+        if(!parsed.code && parsed.shares === null && parsed.avgPrice === null && parsed.currentPrice === null) continue;
+        entries.push(parsed);
+      }
+    }
+    try{
+      localStorage.setItem(LEDGER_KEY, JSON.stringify(entries));
+      importStatus.textContent = 'Portfolio Ledger Created';
+      console.log('Portfolio ledger saved to localStorage key', LEDGER_KEY, entries);
+      return entries;
+    } catch(err){
+      console.error('Failed to save ledger', err);
+      importStatus.textContent = 'Failed to create ledger';
+      return null;
+    }
   }
 
   // Unified handler for file inputs
@@ -109,6 +217,10 @@
               localStorage.setItem(OCR_KEY, ocrText);
             } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
             showOCRResult(ocrText);
+
+            // Generate ledger from OCR
+            generateLedgerFromOCR();
+
             // Mark import complete on first-launch
             localStorage.setItem(IMPORT_FLAG, 'imported');
             if(showComplete){
@@ -135,6 +247,7 @@
               const ocrText = await runOCR(dataURL);
               localStorage.setItem(OCR_KEY, ocrText);
               showOCRResult(ocrText);
+              generateLedgerFromOCR();
             } catch(e){ console.warn('OCR on raw data failed', e); }
             localStorage.setItem(IMPORT_FLAG, 'imported');
             statusElement.textContent = 'Import Complete';
@@ -153,6 +266,7 @@
             const ocrText = await runOCR(dataURL);
             localStorage.setItem(OCR_KEY, ocrText);
             showOCRResult(ocrText);
+            generateLedgerFromOCR();
           } catch(e){ console.warn('OCR on error fallback failed', e); }
           localStorage.setItem(IMPORT_FLAG, 'imported');
           statusElement.textContent = 'Import Complete';
@@ -220,6 +334,8 @@
       const ocrText = await runOCR(data);
       localStorage.setItem(OCR_KEY, ocrText);
       showOCRResult(ocrText);
+      // regenerate ledger each time OCR runs manually
+      generateLedgerFromOCR();
       ocrStatus.textContent = 'OCR complete (manual)';
     } catch(err){
       console.error('Manual OCR failed', err);
