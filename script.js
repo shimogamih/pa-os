@@ -339,6 +339,19 @@
     return text;
   }
 
+  // Placeholder OCR simulator for Japanese stock names
+  function simulateJapaneseNamesOCR(){
+    // Return example Japanese stock names, one per line
+    const sample = [
+      'NSグループ',
+      'UTグループ',
+      '日本精工',
+      'PHCホールディングス',
+      'セレス'
+    ];
+    return sample.join('\n');
+  }
+
   input.addEventListener('change', function(e){
     const file = e.target.files && e.target.files[0];
     handleFileInput(file, importStatus, true);
@@ -351,23 +364,47 @@
     setTimeout(()=> hideModal(), 1000);
   });
 
-  // Run OCR when button is pressed: read saved image from localStorage and recognize
+  // Run OCR when button is pressed: read saved image from localStorage and recognize or simulate
   ocrBtn.addEventListener('click', async function(){
     const data = localStorage.getItem(SCREENSHOT_KEY);
     if(!data){
       ocrStatus.textContent = 'No screenshot found in localStorage.';
       return;
     }
+
+    importStatus.textContent = 'Importing Portfolio...';
+    ocrStatus.textContent = 'OCR: starting...';
+
+    let text = '';
     try{
-      ocrStatus.textContent = 'OCR: running...';
-      importStatus.textContent = 'Importing Portfolio...';
-      const text = await runOCR(data);
+      if(window.Tesseract && typeof window.Tesseract.recognize === 'function'){
+        // Run real OCR
+        ocrStatus.textContent = 'OCR: running...';
+        let lastProgress = 0;
+        const result = await window.Tesseract.recognize(data, 'eng+jpn', {
+          logger: m => {
+            if(m && typeof m.progress === 'number'){
+              const pct = Math.round(m.progress * 100);
+              if(pct !== lastProgress){ lastProgress = pct; ocrStatus.textContent = `OCR: ${pct}% (${m.status || ''})`; }
+            }
+          }
+        });
+        // Tesseract v2 returns result.data.text; older builds may return result.text
+        text = (result && result.data && result.data.text) ? result.data.text : (result && result.text ? result.text : '');
+      } else {
+        // Simulate OCR by returning sample Japanese names
+        ocrStatus.textContent = 'OCR: simulating...';
+        // For improved realism we could analyze the image dataURL, but per requirement we simulate detection
+        text = simulateJapaneseNamesOCR();
+        // small delay to mimic processing
+        await new Promise(r=>setTimeout(r, 700));
+      }
+
       // Save OCR text
-      try{
-        localStorage.setItem(OCR_KEY, text);
-      } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
+      try{ localStorage.setItem(OCR_KEY, text); } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
       // Update UI
       showOCRResult(text);
+      ocrStatus.textContent = 'OCR Complete';
       importStatus.textContent = 'OCR Complete';
       // Automatically generate ledger
       generateLedgerFromOCR();
@@ -398,7 +435,7 @@
       if(h.profitLoss !== null && !isNaN(h.profitLoss)) totalProfit += Number(h.profitLoss);
     }
 
-    totalAssetsEl.textContent = totalAssets ? totalAssets.toLocaleString() : '��';
+    totalAssetsEl.textContent = totalAssets ? totalAssets.toLocaleString() : '—';
     totalProfitEl.textContent = totalProfit ? totalProfit.toLocaleString() : '—';
     numHoldingsEl.textContent = count;
 
@@ -419,27 +456,27 @@
       card.appendChild(title);
 
       const codeRow = document.createElement('div'); codeRow.className = 'holding-row';
-      codeRow.innerHTML = `<div class=\"muted\">Code</div><div>${h.code || '—'}</div>`;
+      codeRow.innerHTML = `<div class="muted">Code</div><div>${h.code || '—'}</div>`;
       card.appendChild(codeRow);
 
       const sharesRow = document.createElement('div'); sharesRow.className = 'holding-row';
-      sharesRow.innerHTML = `<div class=\"muted\">Shares</div><div>${h.shares !== null ? h.shares : '—'}</div>`;
+      sharesRow.innerHTML = `<div class="muted">Shares</div><div>${h.shares !== null ? h.shares : '—'}</div>`;
       card.appendChild(sharesRow);
 
       const avgRow = document.createElement('div'); avgRow.className = 'holding-row';
-      avgRow.innerHTML = `<div class=\"muted\">Average Price</div><div>${h.averagePrice !== null ? h.averagePrice : '—'}</div>`;
+      avgRow.innerHTML = `<div class="muted">Average Price</div><div>${h.averagePrice !== null ? h.averagePrice : '—'}</div>`;
       card.appendChild(avgRow);
 
       const curRow = document.createElement('div'); curRow.className = 'holding-row';
-      curRow.innerHTML = `<div class=\"muted\">Current Price</div><div>${h.currentPrice !== null ? h.currentPrice : '—'}</div>`;
+      curRow.innerHTML = `<div class="muted">Current Price</div><div>${h.currentPrice !== null ? h.currentPrice : '—'}</div>`;
       card.appendChild(curRow);
 
       const mvRow = document.createElement('div'); mvRow.className = 'holding-row';
-      mvRow.innerHTML = `<div class=\"muted\">Market Value</div><div>${h.marketValue !== null ? h.marketValue : '—'}</div>`;
+      mvRow.innerHTML = `<div class="muted">Market Value</div><div>${h.marketValue !== null ? h.marketValue : '—'}</div>`;
       card.appendChild(mvRow);
 
       const plRow = document.createElement('div'); plRow.className = 'holding-row';
-      plRow.innerHTML = `<div class=\"muted\">Profit/Loss</div><div>${h.profitLoss !== null ? h.profitLoss : '—'}</div>`;
+      plRow.innerHTML = `<div class="muted">Profit/Loss</div><div>${h.profitLoss !== null ? h.profitLoss : '—'}</div>`;
       card.appendChild(plRow);
 
       ledgerCards.appendChild(card);
