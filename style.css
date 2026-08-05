@@ -77,6 +77,18 @@ html,body{
 .modal[aria-hidden="true"]{display:none}
 .modal-sheet{width:100%; max-width:420px; background:var(--panel); padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.03)}
 
+/* Ledger screen */
+.ledger-screen{position:fixed; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95)); display:flex; align-items:flex-start; justify-content:center; padding:20px; z-index:80}
+.ledger-screen[aria-hidden="true"]{display:none}
+.ledger-sheet{width:100%; max-width:900px; background:var(--panel); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.03);}
+.ledger-header{display:flex; justify-content:space-between; align-items:center; gap:12px}
+.ledger-summary{display:flex; gap:12px; margin-top:12px}
+.summary-item{flex:1; background:var(--glass); padding:12px; border-radius:10px; text-align:center}
+.ledger-cards{margin-top:16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+.holding-card{padding:12px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border:1px solid rgba(255,255,255,0.03)}
+.holding-card h4{margin:0 0 8px 0}
+.holding-row{display:flex; justify-content:space-between; margin:4px 0}
+
 /* iPhone / Safari specific tweaks */
 html,body{height:100%}
 .container{ -webkit-overflow-scrolling: touch; }
@@ -95,4 +107,5 @@ html,body{height:100%}
   .topbar{padding:12px}
   .title{font-size:18px}
   .file-btn{padding:10px}
+  .ledger-sheet{padding:12px}
 }

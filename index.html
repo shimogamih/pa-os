@@ -15,6 +15,7 @@
       <h1 class="title">PA-OS</h1>
       <nav class="meta">
         <button id="open-import" class="btn">Import Portfolio</button>
+        <button id="open-ledger" class="btn">Portfolio Ledger</button>
       </nav>
     </header>
 
@@ -99,6 +100,32 @@
 
       <div id="modal-status" class="import-status"></div>
       <button id="modal-close" class="btn secondary">Later</button>
+    </div>
+  </div>
+
+  <!-- Portfolio Ledger screen -->
+  <div id="ledger-screen" class="ledger-screen" aria-hidden="true">
+    <div class="ledger-sheet">
+      <div class="ledger-header">
+        <h2>Portfolio Ledger</h2>
+        <button id="close-ledger" class="btn secondary">Back</button>
+      </div>
+      <div class="ledger-summary">
+        <div class="summary-item">
+          <div class="muted">Total Assets</div>
+          <div id="total-assets" class="large">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="muted">Total Profit/Loss</div>
+          <div id="total-profit" class="large">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="muted">Number of Holdings</div>
+          <div id="num-holdings" class="large">0</div>
+        </div>
+      </div>
+
+      <div id="ledger-cards" class="ledger-cards"></div>
     </div>
   </div>
 
