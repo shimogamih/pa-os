@@ -351,21 +351,30 @@
     setTimeout(()=> hideModal(), 1000);
   });
 
-  // OCR placeholder button now triggers OCR again on saved image
+  // Run OCR when button is pressed: read saved image from localStorage and recognize
   ocrBtn.addEventListener('click', async function(){
     const data = localStorage.getItem(SCREENSHOT_KEY);
-    if(!data){ ocrStatus.textContent = 'No screenshot to OCR.'; return; }
-    ocrStatus.textContent = 'OCR: running (manual)';
+    if(!data){
+      ocrStatus.textContent = 'No screenshot found in localStorage.';
+      return;
+    }
     try{
-      const ocrText = await runOCR(data);
-      localStorage.setItem(OCR_KEY, ocrText);
-      showOCRResult(ocrText);
-      // regenerate ledger each time OCR runs manually
+      ocrStatus.textContent = 'OCR: running...';
+      importStatus.textContent = 'Importing Portfolio...';
+      const text = await runOCR(data);
+      // Save OCR text
+      try{
+        localStorage.setItem(OCR_KEY, text);
+      } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
+      // Update UI
+      showOCRResult(text);
+      importStatus.textContent = 'OCR Complete';
+      // Automatically generate ledger
       generateLedgerFromOCR();
-      ocrStatus.textContent = 'OCR complete (manual)';
     } catch(err){
-      console.error('Manual OCR failed', err);
+      console.error('OCR run failed', err);
       ocrStatus.textContent = 'OCR failed';
+      importStatus.textContent = 'OCR failed';
     }
   });
 
@@ -389,7 +398,7 @@
       if(h.profitLoss !== null && !isNaN(h.profitLoss)) totalProfit += Number(h.profitLoss);
     }
 
-    totalAssetsEl.textContent = totalAssets ? totalAssets.toLocaleString() : '—';
+    totalAssetsEl.textContent = totalAssets ? totalAssets.toLocaleString() : '��';
     totalProfitEl.textContent = totalProfit ? totalProfit.toLocaleString() : '—';
     numHoldingsEl.textContent = count;
 
@@ -410,27 +419,27 @@
       card.appendChild(title);
 
       const codeRow = document.createElement('div'); codeRow.className = 'holding-row';
-      codeRow.innerHTML = `<div class="muted">Code</div><div>${h.code || '—'}</div>`;
+      codeRow.innerHTML = `<div class=\"muted\">Code</div><div>${h.code || '—'}</div>`;
       card.appendChild(codeRow);
 
       const sharesRow = document.createElement('div'); sharesRow.className = 'holding-row';
-      sharesRow.innerHTML = `<div class="muted">Shares</div><div>${h.shares !== null ? h.shares : '—'}</div>`;
+      sharesRow.innerHTML = `<div class=\"muted\">Shares</div><div>${h.shares !== null ? h.shares : '—'}</div>`;
       card.appendChild(sharesRow);
 
       const avgRow = document.createElement('div'); avgRow.className = 'holding-row';
-      avgRow.innerHTML = `<div class="muted">Average Price</div><div>${h.averagePrice !== null ? h.averagePrice : '—'}</div>`;
+      avgRow.innerHTML = `<div class=\"muted\">Average Price</div><div>${h.averagePrice !== null ? h.averagePrice : '—'}</div>`;
       card.appendChild(avgRow);
 
       const curRow = document.createElement('div'); curRow.className = 'holding-row';
-      curRow.innerHTML = `<div class="muted">Current Price</div><div>${h.currentPrice !== null ? h.currentPrice : '—'}</div>`;
+      curRow.innerHTML = `<div class=\"muted\">Current Price</div><div>${h.currentPrice !== null ? h.currentPrice : '—'}</div>`;
       card.appendChild(curRow);
 
       const mvRow = document.createElement('div'); mvRow.className = 'holding-row';
-      mvRow.innerHTML = `<div class="muted">Market Value</div><div>${h.marketValue !== null ? h.marketValue : '—'}</div>`;
+      mvRow.innerHTML = `<div class=\"muted\">Market Value</div><div>${h.marketValue !== null ? h.marketValue : '—'}</div>`;
       card.appendChild(mvRow);
 
       const plRow = document.createElement('div'); plRow.className = 'holding-row';
-      plRow.innerHTML = `<div class="muted">Profit/Loss</div><div>${h.profitLoss !== null ? h.profitLoss : '—'}</div>`;
+      plRow.innerHTML = `<div class=\"muted\">Profit/Loss</div><div>${h.profitLoss !== null ? h.profitLoss : '—'}</div>`;
       card.appendChild(plRow);
 
       ledgerCards.appendChild(card);
