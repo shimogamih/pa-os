@@ -34,10 +34,14 @@
       const data = localStorage.getItem(SCREENSHOT_KEY);
       if(data) showPreviewFromDataURL(data);
       const savedOCR = localStorage.getItem(OCR_KEY);
-      if(savedOCR) showOCRResult(savedOCR);
-      const ledger = localStorage.getItem(LEDGER_KEY);
-      if(savedOCR && !ledger){
-        generateLedgerFromOCR();
+      if(savedOCR){
+        // populate OCR UI and set statuses
+        showOCRResult(savedOCR);
+        ocrStatus.textContent = 'OCR Complete';
+        importStatus.textContent = 'OCR Complete';
+        // generate ledger if missing
+        const ledger = localStorage.getItem(LEDGER_KEY);
+        if(!ledger){ generateLedgerFromOCR(); }
       }
     }
   }
@@ -62,6 +66,14 @@
     rest.forEach(n => n.remove());
   }
 
+  // Remove duplicate #ocr-text nodes (should be at most one)
+  function cleanOCRTextNodes(){
+    const nodes = Array.from(document.querySelectorAll('#ocr-text'));
+    if(nodes.length <= 1) return;
+    const [first, ...rest] = nodes;
+    rest.forEach(n => n.remove());
+  }
+
   // Create or get a single OCR result container (below preview)
   function getOCRContainer(){
     cleanOCRPanels();
@@ -78,10 +90,15 @@
   }
 
   function showOCRResult(text){
-    // ensure only one panel and update it
+    // ensure single OCR panel and single #ocr-text
     getOCRContainer();
+    cleanOCRTextNodes();
     const pre = document.getElementById('ocr-text');
     if(pre) pre.textContent = text || '';
+    // hide 'No OCR text available to generate ledger.' message if present
+    if(importStatus && importStatus.textContent && /No OCR text available/i.test(importStatus.textContent)){
+      importStatus.textContent = '';
+    }
   }
 
   // Conservative parsing helpers
@@ -113,7 +130,11 @@
 
   function generateLedgerFromOCR(){
     const ocr = localStorage.getItem(OCR_KEY) || '';
-    if(!ocr){ importStatus.textContent = 'No OCR text available to generate ledger.'; return null; }
+    if(!ocr){
+      // Only show the message if OCR truly doesn't exist
+      importStatus.textContent = 'No OCR text available to generate ledger.';
+      return null;
+    }
     const lines = ocr.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
     const entries = [];
     for(const line of lines){
@@ -168,7 +189,6 @@
     ocrStatus.textContent = 'OCR: running...';
     let lastProgress = 0;
     const result = await window.Tesseract.recognize(dataURL, 'jpn+eng', { logger: m => { if(m && typeof m.progress === 'number'){ const pct = Math.round(m.progress * 100); if(pct !== lastProgress){ lastProgress = pct; ocrStatus.textContent = `OCR: ${pct}% (${m.status||''})`; } } } });
-    // Tesseract v2 returns result.data.text; some versions return result.text
     const text = (result && result.data && result.data.text) ? result.data.text : (result && result.text ? result.text : '');
     ocrStatus.textContent = 'OCR: done';
     return text;
@@ -180,7 +200,7 @@
   input.addEventListener('change', function(e){ const file = e.target.files && e.target.files[0]; handleFileInput(file, importStatus); });
   modalInput.addEventListener('change', function(e){ const file = e.target.files && e.target.files[0]; handleFileInput(file, modalStatus); setTimeout(()=> hideModal(), 1000); });
 
-  // Main OCR trigger: read image from localStorage, run Tesseract if available, otherwise simulate. Save to portfolio_ocr, update UI, enable ledger generation.
+  // Main OCR trigger: read image from localStorage, run Tesseract if available, otherwise simulate. Save to portfolio_ocr, update #ocr-text, enable ledger generation.
   ocrBtn.addEventListener('click', async function(){
     const data = localStorage.getItem(SCREENSHOT_KEY);
     if(!data){ ocrStatus.textContent = 'No screenshot found in localStorage.'; return; }
@@ -188,16 +208,7 @@
     ocrStatus.textContent = 'OCR: starting...';
     let text = '';
     try{
-      try{
-        // Try real OCR
-        text = await runTesseractOCR(data);
-      } catch(err){
-        // If Tesseract unavailable or fails, simulate placeholder
-        console.warn('Tesseract OCR failed or unavailable, using placeholder OCR', err);
-        text = simulateJapaneseNamesOCR();
-        // mimic short processing time
-        await new Promise(r=>setTimeout(r, 500));
-      }
+      try{ text = await runTesseractOCR(data); } catch(err){ console.warn('Tesseract OCR failed or unavailable, using placeholder OCR', err); text = simulateJapaneseNamesOCR(); await new Promise(r=>setTimeout(r, 500)); }
       // Save OCR text exactly as required
       try{ localStorage.setItem(OCR_KEY, text); } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
       // Ensure single OCR panel and update UI
