@@ -39,9 +39,14 @@
         showOCRResult(savedOCR);
         ocrStatus.textContent = 'OCR Complete';
         importStatus.textContent = 'OCR Complete';
-        // generate ledger if missing
-        const ledger = localStorage.getItem(LEDGER_KEY);
-        if(!ledger){ generateLedgerFromOCR(); }
+        // parse portfolio ledger from OCR and render inline card
+        const ledger = parsePortfolioOCR();
+        if(ledger && ledger.length > 0){
+          renderInlineLedgerCard(ledger);
+        }
+        // generate ledger-screen data if missing
+        const storedLedger = localStorage.getItem(LEDGER_KEY);
+        if(!storedLedger){ generateLedgerFromOCR(); }
       }
     }
   }
@@ -61,12 +66,10 @@
   function cleanOCRPanels(){
     const nodes = Array.from(document.querySelectorAll('#ocr-result'));
     if(nodes.length <= 1) return;
-    // keep the first, remove the rest
     const [first, ...rest] = nodes;
     rest.forEach(n => n.remove());
   }
 
-  // Remove duplicate #ocr-text nodes (should be at most one)
   function cleanOCRTextNodes(){
     const nodes = Array.from(document.querySelectorAll('#ocr-text'));
     if(nodes.length <= 1) return;
@@ -90,7 +93,6 @@
   }
 
   function showOCRResult(text){
-    // ensure single OCR panel and single #ocr-text
     getOCRContainer();
     cleanOCRTextNodes();
     const pre = document.getElementById('ocr-text');
@@ -101,55 +103,117 @@
     }
   }
 
-  // Conservative parsing helpers
-  function extractAllNumbers(line){
-    const matches = line.match(/([+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|[+-]?\d+\.\d+)/g);
-    if(!matches) return [];
-    return matches.map(s => parseFloat(s.replace(/,/g,''))).filter(n => !isNaN(n));
-  }
+  // Portfolio OCR -> ledger parser
+  function parsePortfolioOCR(){
+    const raw = localStorage.getItem(OCR_KEY) || '';
+    if(!raw) return [];
 
-  function parseOCRLineToHolding(line){
-    const cleaned = line.replace(/\u2013|\u2014|–/g,'-').trim();
-    if(!cleaned) return null;
-    let code = null;
-    const paren = cleaned.match(/\(([^)]+)\)/);
-    if(paren && paren[1]){ const maybe = paren[1].trim(); if(/^[A-Z0-9.-]{1,10}$/i.test(maybe)) code = maybe; }
-    const numbers = extractAllNumbers(cleaned);
-    let name = null; const numIdx = cleaned.search(/[0-9]/);
-    if(numIdx > 0) name = cleaned.slice(0, numIdx).replace(/\([^)]*\)/g,'').trim(); else name = cleaned.replace(/\([^)]*\)/g,'').trim();
-    if(!name) name = null;
-    let shares = null, averagePrice = null, currentPrice = null, profitLoss = null, marketValue = null;
-    if(numbers.length >= 1) shares = Number.isFinite(numbers[0]) ? numbers[0] : null;
-    if(numbers.length >= 2) averagePrice = Number.isFinite(numbers[1]) ? numbers[1] : null;
-    if(numbers.length >= 3) currentPrice = Number.isFinite(numbers[2]) ? numbers[2] : null;
-    if(numbers.length >= 4) profitLoss = Number.isFinite(numbers[3]) ? numbers[3] : null;
-    if(shares !== null && currentPrice !== null) marketValue = shares * currentPrice; else marketValue = null;
-    if(profitLoss === null){ if(shares !== null && averagePrice !== null && currentPrice !== null){ profitLoss = (currentPrice - averagePrice) * shares; } else { profitLoss = null; } }
-    return { name: name || null, code: code || null, shares: (shares === null||isNaN(shares))?null:shares, averagePrice: (averagePrice===null||isNaN(averagePrice))?null:averagePrice, currentPrice:(currentPrice===null||isNaN(currentPrice))?null:currentPrice, marketValue:(marketValue===null||isNaN(marketValue))?null:marketValue, profitLoss:(profitLoss===null||isNaN(profitLoss))?null:profitLoss };
-  }
-
-  function generateLedgerFromOCR(){
-    const ocr = localStorage.getItem(OCR_KEY) || '';
-    if(!ocr){
-      // Only show the message if OCR truly doesn't exist
-      importStatus.textContent = 'No OCR text available to generate ledger.';
-      return null;
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    const garbagePatterns = [
+      /^extracted text/i, /^run ocr/i, /^portfolio$/i, /^feed$/i, /^my page$/i,
+      /^placeholder/i, /github\.io/i, /ocr complete/i, /^importing portfolio/i,
+      /^no ocr text available/i
+    ];
+    function isGarbage(line){
+      if(!line) return true;
+      const lower = line.toLowerCase();
+      if(lower.startsWith('http') || lower.includes('github.io') || lower.includes('http')) return true;
+      for(const p of garbagePatterns){ if(p.test(line)) return true; }
+      // lines that are clearly numeric labels like '銘柄' or '株数' etc may be garbage
+      if(/^\D{0,2}\s*証券コード/.test(line)) return true;
+      return false;
     }
-    const lines = ocr.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length>0);
-    const entries = [];
-    for(const line of lines){
-      if(/^total/i.test(line) || /^value/i.test(line) || /^cash/i.test(line) || /^portfolio/i.test(line)) continue;
-      const holding = parseOCRLineToHolding(line);
-      if(!holding) continue;
-      const hasNumeric = (holding.shares !== null || holding.averagePrice !== null || holding.currentPrice !== null || holding.profitLoss !== null || holding.marketValue !== null);
-      if(!holding.name && !holding.code) continue;
-      if(!hasNumeric && !holding.code) continue;
-      entries.push(holding);
+
+    const ledger = [];
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      if(isGarbage(line)) continue;
+      // Detect name line: contains Japanese (non-ascii) characters and not just numbers
+      const hasJapanese = /[^\x00-\x7F]/.test(line);
+      if(!hasJapanese) continue;
+      const name = line;
+      // find next lines for code and value
+      let code = null;
+      let value = null;
+      // look ahead up to 4 lines
+      for(let j=i+1;j<Math.min(i+5, lines.length); j++){
+        const l = lines[j];
+        if(isGarbage(l)) continue;
+        // code detection: typically all digits or digits+letters, short (2-6 chars)
+        const maybeCode = l.replace(/\s+/g,'');
+        if(!code && /^[0-9A-Za-z]{2,6}$/.test(maybeCode)){
+          code = maybeCode;
+          continue;
+        }
+        // value detection: contains 円 or ends with 円, or contains comma and '円'
+        const moneyMatch = l.match(/([0-9]{1,3}(?:,[0-9]{3})*)(?:\s*)円/);
+        if(!value && moneyMatch){
+          value = parseInt(moneyMatch[1].replace(/,/g,''), 10);
+          break; // got value, stop looking
+        }
+        // sometimes value like '¥123,456' or 'JPY 123,456'
+        const yenMatch = l.match(/¥\s*([0-9]{1,3}(?:,[0-9]{3})*)/);
+        if(!value && yenMatch){ value = parseInt(yenMatch[1].replace(/,/g,''),10); break; }
+        const jpyMatch = l.match(/([0-9]{1,3}(?:,[0-9]{3})*)\s*JPY/i);
+        if(!value && jpyMatch){ value = parseInt(jpyMatch[1].replace(/,/g,''),10); break; }
+      }
+      // If we found at least a name and value (code may be null), record it
+      if(name && (value !== null)){
+        ledger.push({ name: name, code: code || null, value: value });
+      }
+      // move i forward so we don't parse same block again
+      // advance to next line after value if found
+      if(ledger.length>0){
+        // skip ahead a bit: set i to next index of lines after current block's name
+        // but keep simple: continue from current i (fine)
+      }
     }
-    try{ localStorage.setItem(LEDGER_KEY, JSON.stringify(entries)); importStatus.textContent = 'Portfolio Ledger Created'; renderLedgerScreen(); showLedgerScreen(); return entries; } catch(err){ console.error('Failed to save ledger', err); importStatus.textContent = 'Failed to create ledger'; return null; }
+
+    // Save ledger into localStorage
+    try{
+      localStorage.setItem(LEDGER_KEY, JSON.stringify(ledger));
+      if(ledger.length>0) importStatus.textContent = 'Portfolio Ledger Created';
+      return ledger;
+    } catch(err){ console.warn('Failed to save portfolio_ledger', err); return ledger; }
   }
 
-  // File handling without auto OCR
+  // Render inline Portfolio Ledger card under preview
+  function renderInlineLedgerCard(ledger){
+    // remove existing inline ledger card
+    const existing = document.getElementById('portfolio-ledger-card');
+    if(existing) existing.remove();
+
+    const card = document.createElement('div');
+    card.id = 'portfolio-ledger-card';
+    card.className = 'card';
+    card.style.marginTop = '12px';
+
+    const h = document.createElement('h3'); h.textContent = 'Portfolio Ledger'; card.appendChild(h);
+
+    if(!ledger || ledger.length===0){
+      const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'No holdings parsed.'; card.appendChild(p);
+      if(preview && preview.parentNode){ preview.parentNode.insertBefore(card, preview.nextSibling); }
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.style.display = 'grid';
+    list.style.gap = '8px';
+
+    ledger.forEach(item => {
+      const row = document.createElement('div'); row.className = 'card'; row.style.padding = '8px';
+      const name = document.createElement('div'); name.textContent = `銘柄名: ${item.name || '—'}`; name.style.fontWeight = '600';
+      const code = document.createElement('div'); code.textContent = `証券コード: ${item.code || '—'}`;
+      const val = document.createElement('div'); val.textContent = `評価額: ${item.value !== null ? item.value.toLocaleString() + '円' : '—'}`;
+      row.appendChild(name); row.appendChild(code); row.appendChild(val);
+      list.appendChild(row);
+    });
+
+    card.appendChild(list);
+    if(preview && preview.parentNode){ preview.parentNode.insertBefore(card, preview.nextSibling); }
+  }
+
+  // Existing functions: file input handling
   async function handleFileInput(file, statusElement){
     if(!file) return;
     statusElement.textContent = 'Importing Portfolio...';
@@ -200,7 +264,7 @@
   input.addEventListener('change', function(e){ const file = e.target.files && e.target.files[0]; handleFileInput(file, importStatus); });
   modalInput.addEventListener('change', function(e){ const file = e.target.files && e.target.files[0]; handleFileInput(file, modalStatus); setTimeout(()=> hideModal(), 1000); });
 
-  // Main OCR trigger: read image from localStorage, run Tesseract if available, otherwise simulate. Save to portfolio_ocr, update #ocr-text, enable ledger generation.
+  // Main OCR trigger
   ocrBtn.addEventListener('click', async function(){
     const data = localStorage.getItem(SCREENSHOT_KEY);
     if(!data){ ocrStatus.textContent = 'No screenshot found in localStorage.'; return; }
@@ -209,33 +273,30 @@
     let text = '';
     try{
       try{ text = await runTesseractOCR(data); } catch(err){ console.warn('Tesseract OCR failed or unavailable, using placeholder OCR', err); text = simulateJapaneseNamesOCR(); await new Promise(r=>setTimeout(r, 500)); }
-      // Save OCR text exactly as required
+      // Save OCR text
       try{ localStorage.setItem(OCR_KEY, text); } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
-      // Ensure single OCR panel and update UI
       showOCRResult(text);
       ocrStatus.textContent = 'OCR Complete';
       importStatus.textContent = 'OCR Complete';
-      // Enable ledger generation
-      generateLedgerFromOCR();
+      // parse portfolio and render inline card
+      const ledger = parsePortfolioOCR();
+      renderInlineLedgerCard(ledger);
     } catch(err){ console.error('OCR run failed', err); ocrStatus.textContent = 'OCR failed'; importStatus.textContent = 'OCR failed'; }
   });
 
+  // render ledger screen
   function renderLedgerScreen(){
     let ledger = [];
     const raw = localStorage.getItem(LEDGER_KEY);
-    if(raw){ try{ ledger = JSON.parse(raw); } catch(e){ ledger = []; } } else { const generated = generateLedgerFromOCR(); ledger = generated || []; }
+    if(raw){ try{ ledger = JSON.parse(raw); } catch(e){ ledger = []; } } else { const generated = parsePortfolioOCR(); ledger = generated || []; }
     let totalAssets = 0; let totalProfit = 0; let count = ledger.length;
-    for(const h of ledger){ if(h.marketValue !== null && !isNaN(h.marketValue)) totalAssets += Number(h.marketValue); if(h.profitLoss !== null && !isNaN(h.profitLoss)) totalProfit += Number(h.profitLoss); }
-    totalAssetsEl.textContent = totalAssets ? totalAssets.toLocaleString() : '—'; totalProfitEl.textContent = totalProfit ? totalProfit.toLocaleString() : '—'; numHoldingsEl.textContent = count;
+    for(const h of ledger){ if(h.value !== null && !isNaN(h.value)) totalAssets += Number(h.value); }
+    totalAssetsEl.textContent = totalAssets ? totalAssets.toLocaleString() + '円' : '—'; totalProfitEl.textContent = '—'; numHoldingsEl.textContent = count;
     ledgerCards.innerHTML = '';
     if(ledger.length === 0){ const msg = document.createElement('div'); msg.className = 'card'; msg.textContent = 'No holdings found in OCR data.'; ledgerCards.appendChild(msg); return; }
     for(const h of ledger){ const card = document.createElement('div'); card.className = 'holding-card'; const title = document.createElement('h4'); title.textContent = h.name || (h.code || 'Unknown'); card.appendChild(title);
-      const codeRow = document.createElement('div'); codeRow.className = 'holding-row'; codeRow.innerHTML = `<div class="muted">Code</div><div>${h.code || '—'}</div>`; card.appendChild(codeRow);
-      const sharesRow = document.createElement('div'); sharesRow.className = 'holding-row'; sharesRow.innerHTML = `<div class="muted">Shares</div><div>${h.shares !== null ? h.shares : '—'}</div>`; card.appendChild(sharesRow);
-      const avgRow = document.createElement('div'); avgRow.className = 'holding-row'; avgRow.innerHTML = `<div class="muted">Average Price</div><div>${h.averagePrice !== null ? h.averagePrice : '—'}</div>`; card.appendChild(avgRow);
-      const curRow = document.createElement('div'); curRow.className = 'holding-row'; curRow.innerHTML = `<div class="muted">Current Price</div><div>${h.currentPrice !== null ? h.currentPrice : '—'}</div>`; card.appendChild(curRow);
-      const mvRow = document.createElement('div'); mvRow.className = 'holding-row'; mvRow.innerHTML = `<div class="muted">Market Value</div><div>${h.marketValue !== null ? h.marketValue : '—'}</div>`; card.appendChild(mvRow);
-      const plRow = document.createElement('div'); plRow.className = 'holding-row'; plRow.innerHTML = `<div class="muted">Profit/Loss</div><div>${h.profitLoss !== null ? h.profitLoss : '—'}</div>`; card.appendChild(plRow);
+      const codeRow = document.createElement('div'); codeRow.className = 'holding-row'; codeRow.innerHTML = `<div class="muted">証券コード</div><div>${h.code || '—'}</div>`; card.appendChild(codeRow);
+      const valRow = document.createElement('div'); valRow.className = 'holding-row'; valRow.innerHTML = `<div class="muted">評価額</div><div>${h.value !== null ? h.value.toLocaleString() + '円' : '—'}</div>`; card.appendChild(valRow);
       ledgerCards.appendChild(card);
     }
   }
