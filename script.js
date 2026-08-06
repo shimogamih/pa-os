@@ -44,9 +44,14 @@
         if(ledger && ledger.length > 0){
           renderInlineLedgerCard(ledger);
         }
+        // also render dashboard card
+        renderDashboardLedgerTable();
         // generate ledger-screen data if missing
         const storedLedger = localStorage.getItem(LEDGER_KEY);
         if(!storedLedger){ generateLedgerFromOCR(); }
+      } else {
+        // even if no OCR, ensure dashboard ledger reflects stored ledger if exists
+        renderDashboardLedgerTable();
       }
     }
   }
@@ -139,37 +144,26 @@
       for(let j=i+1;j<Math.min(i+5, lines.length); j++){
         const l = lines[j];
         if(isGarbage(l)) continue;
-        // code detection: typically all digits or digits+letters, short (2-6 chars)
         const maybeCode = l.replace(/\s+/g,'');
         if(!code && /^[0-9A-Za-z]{2,6}$/.test(maybeCode)){
           code = maybeCode;
           continue;
         }
-        // value detection: contains 円 or ends with 円, or contains comma and '円'
         const moneyMatch = l.match(/([0-9]{1,3}(?:,[0-9]{3})*)(?:\s*)円/);
         if(!value && moneyMatch){
           value = parseInt(moneyMatch[1].replace(/,/g,''), 10);
           break; // got value, stop looking
         }
-        // sometimes value like '¥123,456' or 'JPY 123,456'
         const yenMatch = l.match(/¥\s*([0-9]{1,3}(?:,[0-9]{3})*)/);
         if(!value && yenMatch){ value = parseInt(yenMatch[1].replace(/,/g,''),10); break; }
         const jpyMatch = l.match(/([0-9]{1,3}(?:,[0-9]{3})*)\s*JPY/i);
         if(!value && jpyMatch){ value = parseInt(jpyMatch[1].replace(/,/g,''),10); break; }
       }
-      // If we found at least a name and value (code may be null), record it
       if(name && (value !== null)){
         ledger.push({ name: name, code: code || null, value: value });
       }
-      // move i forward so we don't parse same block again
-      // advance to next line after value if found
-      if(ledger.length>0){
-        // skip ahead a bit: set i to next index of lines after current block's name
-        // but keep simple: continue from current i (fine)
-      }
     }
 
-    // Save ledger into localStorage
     try{
       localStorage.setItem(LEDGER_KEY, JSON.stringify(ledger));
       if(ledger.length>0) importStatus.textContent = 'Portfolio Ledger Created';
@@ -177,9 +171,8 @@
     } catch(err){ console.warn('Failed to save portfolio_ledger', err); return ledger; }
   }
 
-  // Render inline Portfolio Ledger card under preview
+  // Render inline Portfolio Ledger card under preview (kept for backward compatibility)
   function renderInlineLedgerCard(ledger){
-    // remove existing inline ledger card
     const existing = document.getElementById('portfolio-ledger-card');
     if(existing) existing.remove();
 
@@ -211,6 +204,67 @@
 
     card.appendChild(list);
     if(preview && preview.parentNode){ preview.parentNode.insertBefore(card, preview.nextSibling); }
+  }
+
+  // NEW: Render Portfolio Ledger as a dashboard card (table)
+  function renderDashboardLedgerTable(){
+    // remove existing dashboard ledger card if present
+    const existing = document.getElementById('dashboard-portfolio-ledger');
+    if(existing) existing.remove();
+
+    // find the dashboard cards container
+    const cardsGrid = document.querySelector('.cards-grid');
+    if(!cardsGrid) return; // can't find container
+
+    const card = document.createElement('div');
+    card.id = 'dashboard-portfolio-ledger';
+    card.className = 'card dashboard-card';
+    card.style.gridColumn = '1 / -1'; // span full width if possible
+
+    const title = document.createElement('h3'); title.textContent = 'Portfolio Ledger';
+    title.style.marginTop = '0';
+    card.appendChild(title);
+
+    let ledger = [];
+    try{
+      const raw = localStorage.getItem(LEDGER_KEY);
+      if(raw) ledger = JSON.parse(raw);
+    } catch(e){ ledger = []; }
+
+    if(!ledger || ledger.length === 0){
+      const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'No portfolio ledger available.'; card.appendChild(p);
+      cardsGrid.appendChild(card);
+      return;
+    }
+
+    // create table
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.marginTop = '8px';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['銘柄','コード','評価額'].forEach(hText => {
+      const th = document.createElement('th'); th.textContent = hText; th.style.textAlign = 'left'; th.style.padding = '6px 8px'; th.style.borderBottom = '1px solid rgba(255,255,255,0.06)'; headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    ledger.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+      const tdName = document.createElement('td'); tdName.textContent = item.name || '—'; tdName.style.padding = '8px';
+      const tdCode = document.createElement('td'); tdCode.textContent = item.code || '—'; tdCode.style.padding = '8px'; tdCode.style.width = '96px';
+      const tdVal = document.createElement('td'); tdVal.textContent = item.value !== null ? '¥' + Number(item.value).toLocaleString() : '—'; tdVal.style.padding = '8px'; tdVal.style.textAlign = 'right';
+      tr.appendChild(tdName); tr.appendChild(tdCode); tr.appendChild(tdVal);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    card.appendChild(table);
+    cardsGrid.appendChild(card);
   }
 
   // Existing functions: file input handling
@@ -281,6 +335,8 @@
       // parse portfolio and render inline card
       const ledger = parsePortfolioOCR();
       renderInlineLedgerCard(ledger);
+      // update dashboard table
+      renderDashboardLedgerTable();
     } catch(err){ console.error('OCR run failed', err); ocrStatus.textContent = 'OCR failed'; importStatus.textContent = 'OCR failed'; }
   });
 
@@ -301,7 +357,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function(){ checkFirstLaunch(); });
+  document.addEventListener('DOMContentLoaded', function(){ checkFirstLaunch(); renderDashboardLedgerTable(); });
   window.addEventListener('orientationchange', function(){ document.body.style.height = window.innerHeight + 'px'; setTimeout(()=>{ document.body.style.height = ''; }, 500); });
 
 })();
