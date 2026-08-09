@@ -78,6 +78,29 @@
             <button id="ocr-btn" class="btn muted">Run OCR (placeholder)</button>
             <div id="ocr-status" class="muted small">OCR: ready (placeholder)</div>
           </div>
+
+          <section class="card ledger-card" id="portfolio-ledger-card">
+            <h2>📋 Portfolio Ledger</h2>
+
+            <div class="ledger-table-wrap">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>銘柄</th>
+                    <th>コード</th>
+                    <th>評価額</th>
+                  </tr>
+                </thead>
+
+                <tbody id="portfolio-ledger-body"></tbody>
+              </table>
+            </div>
+
+            <p id="ledger-empty" class="ledger-empty" hidden>
+              No portfolio ledger available.
+            </p>
+          </section>
+
         </div>
       </section>
     </main>
