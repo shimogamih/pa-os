@@ -59,7 +59,22 @@ html,body{
 .cards-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px}
 .dashboard-card .large{font-size:20px; font-weight:700}
 .upload-card .file-label{display:inline-block}
-.file-label input[type="file"]{display:none}
+/* Keep file input interactive on iOS: do not use display:none; instead layer an invisible input over the label */
+.file-label{
+  display:inline-block;
+  position:relative;
+  overflow:hidden;
+}
+.file-label input[type="file"]{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+  z-index:5;
+}
 .file-btn{display:inline-block; padding:10px 12px; background:linear-gradient(90deg,var(--accent), #6d28d9); color:white; border-radius:8px; cursor:pointer}
 .preview{margin-top:12px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.02); min-height:80px; display:flex; align-items:center; justify-content:center}
 .preview img{max-width:100%; height:auto; display:block}
@@ -78,9 +93,9 @@ html,body{
 .modal-sheet{width:100%; max-width:420px; background:var(--panel); padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.03)}
 
 /* Ledger screen */
-.ledger-screen{position:fixed; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95)); display:flex; align-items:flex-start; justify-content:center; padding:20px; z-index:70}
+.ledger-screen{position:fixed; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95)); display:flex; align-items:flex-start; justify-content:center; padding:20px; z-index:[...]}
 .ledger-screen[aria-hidden="true"]{display:none}
-.ledger-sheet{width:100%; max-width:900px; background:var(--panel); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.03);}
+.ledger-sheet{width:100%; max-width:900px; background:var(--panel); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.03);} 
 .ledger-header{display:flex; justify-content:space-between; align-items:center; gap:12px}
 .ledger-summary{display:flex; gap:12px; margin-top:12px}
 .summary-item{flex:1; background:var(--glass); padding:12px; border-radius:10px; text-align:center}
