@@ -7,7 +7,7 @@
   <title>PA-OS — Dark Fantasy Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <!-- Tesseract.js placeholder (loaded but not used for analysis yet) -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js" defer></script>
 </head>
 <body>
   <div id="app" class="app">
@@ -66,8 +66,9 @@
           <h2>Portfolio Screenshot</h2>
           <p class="muted">Upload a screenshot to import your portfolio. Works on iPhone.</p>
 
-          <label for="screenshotFileInput" class="file-label">
-            <input id="screenshotFileInput" type="file">
+          <!-- Single file input used in both places via labels with for="portfolio-input" -->
+          <label for="portfolio-input" class="file-label">
+            <input id="portfolio-input" type="file" accept="image/*">
             <span class="file-btn">Choose or Take Photo</span>
           </label>
 
@@ -78,29 +79,6 @@
             <button id="ocr-btn" class="btn muted">Run OCR (placeholder)</button>
             <div id="ocr-status" class="muted small">OCR: ready (placeholder)</div>
           </div>
-
-          <section class="card ledger-card" id="portfolio-ledger-card">
-            <h2>📋 Portfolio Ledger</h2>
-
-            <div class="ledger-table-wrap">
-              <table class="ledger-table">
-                <thead>
-                  <tr>
-                    <th>銘柄</th>
-                    <th>コード</th>
-                    <th>評価額</th>
-                  </tr>
-                </thead>
-
-                <tbody id="portfolio-ledger-body"></tbody>
-              </table>
-            </div>
-
-            <p id="ledger-empty" class="ledger-empty" hidden>
-              No portfolio ledger available.
-            </p>
-          </section>
-
         </div>
       </section>
     </main>
@@ -116,8 +94,8 @@
       <h2>Import Portfolio</h2>
       <p class="muted">To get started, import a portfolio screenshot. We'll save it locally on your device.</p>
 
-      <label for="modalScreenshotFileInput" class="file-label">
-        <input id="modalScreenshotFileInput" type="file">
+      <!-- Use the same input via label (do NOT duplicate the input element) -->
+      <label for="portfolio-input" class="file-label">
         <span class="file-btn">Select Screenshot</span>
       </label>
 
@@ -152,6 +130,6 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
