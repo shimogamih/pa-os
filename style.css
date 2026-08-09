@@ -1,3 +1,115 @@
+/* style.css — Dark fantasy responsive theme for PA-OS */
+:root{
+  --bg:#0b0b0b;
+  --panel:#121212;
+  --muted:#9aa0a6;
+  --accent:#8b5cf6; /* purple accent */
+  --card:#0f0f0f;
+  --glass: rgba(255,255,255,0.02);
+}
+html,body{
+  height:100%;
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg,#070707 0%, #0d0d0d 100%);
+  color:#e6e6e6;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.app{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 20px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  backdrop-filter: blur(2px);
+}
+.title{
+  font-size:20px;
+  letter-spacing:1px;
+  margin:0;
+}
+.container{
+  display:flex;
+  gap:20px;
+  padding:20px;
+  flex:1 1 auto;
+}
+.left-panel{flex:0 0 320px; display:flex;flex-direction:column; gap:20px}
+.right-panel{flex:1 1 auto; display:flex; flex-direction:column; gap:20px}
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+  border:1px solid rgba(255,255,255,0.03);
+  padding:16px;
+  border-radius:12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+}
+.guild-master .avatar-placeholder{
+  width:100%; height:120px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#0d0d0d,#151515); border-radius:8px; font-weight:700; font-size:28px;
+}
+.members-list{list-style:none; padding:0; margin:8px 0 0 0; display:flex; flex-direction:column; gap:8px}
+.members-list li{padding:8px; background:var(--glass); border-radius:8px}
+.cards-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px}
+.dashboard-card .large{font-size:20px; font-weight:700}
+.upload-card .file-label{display:inline-block}
+.file-label input[type="file"]{display:none}
+.file-btn{display:inline-block; padding:10px 12px; background:linear-gradient(90deg,var(--accent), #6d28d9); color:white; border-radius:8px; cursor:pointer}
+.preview{margin-top:12px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.02); min-height:80px; display:flex; align-items:center; justify-content:center}
+.preview img{max-width:100%; height:auto; display:block}
+.import-status{margin-top:8px; color:var(--accent); font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.btn{padding:8px 12px; border-radius:8px; background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04); cursor:pointer}
+.btn.secondary{background:rgba(255,255,255,0.02)}
+.btn.muted{color:var(--muted)}
+.ocr-area{margin-top:12px; display:flex; gap:12px; align-items:center}
+.footer{padding:12px 20px; text-align:center}
+
+/* Modal */
+.modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8)); z-index:60; padding:20px;}
+.modal[aria-hidden="true"]{display:none}
+.modal-sheet{width:100%; max-width:420px; background:var(--panel); padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.03)}
+
+/* Ledger screen */
+.ledger-screen{position:fixed; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95)); display:flex; align-items:flex-start; justify-content:center; padding:20px; z-index:70}
+.ledger-screen[aria-hidden="true"]{display:none}
+.ledger-sheet{width:100%; max-width:900px; background:var(--panel); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.03);}
+.ledger-header{display:flex; justify-content:space-between; align-items:center; gap:12px}
+.ledger-summary{display:flex; gap:12px; margin-top:12px}
+.summary-item{flex:1; background:var(--glass); padding:12px; border-radius:10px; text-align:center}
+.ledger-cards{margin-top:16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+.holding-card{padding:12px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border:1px solid rgba(255,255,255,0.03)}
+.holding-card h4{margin:0 0 8px 0}
+.holding-row{display:flex; justify-content:space-between; margin:4px 0}
+
+/* iPhone / Safari specific tweaks */
+html,body{height:100%}
+.container{ -webkit-overflow-scrolling: touch; }
+@supports(padding: max(0px)){ /* safe area */
+  .container{ padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)); }
+}
+
+/* Responsive */
+@media (max-width:900px){
+  .container{flex-direction:column}
+  .left-panel{flex-direction:row; gap:12px; overflow:auto}
+  .left-panel .card{min-width:160px}
+}
+@media (max-width:420px){
+  .left-panel{flex:0 0 auto}
+  .topbar{padding:12px}
+  .title{font-size:18px}
+  .file-btn{padding:10px}
+  .ledger-sheet{padding:12px}
+}
+
 /* =========================
    Portfolio Ledger
 ========================= */
