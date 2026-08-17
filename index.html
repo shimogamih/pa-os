@@ -67,8 +67,14 @@
           <p class="muted">Upload a screenshot to import your portfolio. Works on iPhone.</p>
 
           <!-- Single file input used in both places via labels with for="portfolio-input" -->
+          <input
+            id="portfolio-input"
+            type="file"
+            accept="image/*"
+            capture="environment"
+          >
+
           <label for="portfolio-input" class="file-label">
-            <input id="portfolio-input" type="file" accept="image/*">
             <span class="file-btn">Choose or Take Photo</span>
           </label>
 
