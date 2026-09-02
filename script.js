@@ -37,7 +37,7 @@
   // Utility helpers
   function el(id){ return document.getElementById(id); }
   function showImportStatus(msg){ if(importStatus) importStatus.textContent = msg; }
-  function showPreviewFromDataURL(dataURL){ if(!preview) return; preview.innerHTML = ''; let img = document.getElementById('portfolio-preview'); if(!img){ img = document.createElement('img'); img.id = 'portfolio-preview'; img.alt = 'Portfolio screenshot preview'; img.style.maxWidth = '100%'; img.style.height = 'auto'; preview.appendChild(img); } img.src = dataURL; }
+  function showPreviewFromDataURL(dataURL){ if(!preview) return; preview.innerHTML = ''; let img = document.getElementById('portfolio-preview'); if(!img){ img = document.createElement('img'); img.id = 'portfolio-preview'; img.alt = 'Portfolio screenshot preview'; img.style.maxWidth = '100%'; } img.src = dataURL; preview.appendChild(img); }
 
   // Parse existing OCR/ledger utilities (unchanged)
   function parsePortfolioOCR(){
@@ -122,7 +122,7 @@
 
   function showPreviewFromDataURL(dataURL){ preview.innerHTML = ''; const img = document.createElement('img'); img.src = dataURL; img.alt = 'Portfolio screenshot preview'; preview.appendChild(img); }
 
-  async function runTesseractOCR(dataURL){ if(!window.Tesseract || typeof window.Tesseract.recognize !== 'function') throw new Error('Tesseract not available'); ocrStatus.textContent = 'OCR: running...'; let lastProgress = 0; const result = await window.Tesseract.recognize(dataURL, 'jpn+eng', { logger: m => { if(m && typeof m.progress === 'number'){ const pct = Math.round(m.progress * 100); if(pct !== lastProgress){ lastProgress = pct; ocrStatus.textContent = 'OCR: ' + pct + '%'; } } } }); const text = (result && result.data && result.data.text) ? result.data.text : (result && result.text ? result.text : ''); ocrStatus.textContent = 'OCR: done'; return text; }
+  async function runTesseractOCR(dataURL){ if(!window.Tesseract || typeof window.Tesseract.recognize !== 'function') throw new Error('Tesseract not available'); ocrStatus.textContent = 'OCR: running...'; let lastProgress = 0; const result = await window.Tesseract.recognize(dataURL, 'jpn+eng', { logger: m => { if(m && typeof m.progress === 'number'){ const pct = Math.round(m.progress * 100); if(pct !== lastProgress){ lastProgress = pct; if(ocrStatus) ocrStatus.textContent = 'OCR: ' + pct + '%'; } } } }); const text = (result && result.data && result.data.text) ? result.data.text : (result && result.text ? result.text : ''); if(ocrStatus) ocrStatus.textContent = 'OCR: done'; return text; }
 
   function simulateJapaneseNamesOCR(){ const sample = ['NSグループ','UTグループ','日本精工','PHCホールディングス','セレス']; return sample.join('\n'); }
 
@@ -167,7 +167,12 @@
       try{ text = await runTesseractOCR(data); } catch(err){ console.warn('Tesseract OCR failed or unavailable, using placeholder OCR', err); text = simulateJapaneseNamesOCR(); await new Promise(r => setTimeout(r,400)); }
       try{ localStorage.setItem(OCR_KEY, text); } catch(err){ console.warn('Failed to save OCR to localStorage', err); }
       // show OCR text
-      const existing = document.getElementById('ocr-result'); if(existing) existing.remove(); const el = document.createElement('div'); el.id = 'ocr-result'; el.className = 'card ocr-result'; el.style.marginTop = '12px'; el.innerHTML = '<h3>Extracted Text</h3><pre id="ocr-text" style="white-space:pre-wrap; word-break:break-word; margin:0; padding:8px; background:rgba(0,0,0,0.2); border-radius:8px"></pre>'; if(preview && preview.parentNode){ preview.parentNode.insertBefore(el, preview.nextSibling); } const pre = document.getElementById('ocr-text'); if(pre) pre.textContent = text || ''; ocrStatus.textContent = 'OCR Complete'; importStatus.textContent = 'OCR Complete'; const ledger = parsePortfolioOCR(); renderInlineLedgerCard(ledger); renderDashboardLedgerTable();
+      const existing = document.getElementById('ocr-result'); if(existing) existing.remove(); const el = document.createElement('div'); el.id = 'ocr-result'; el.className = 'card ocr-result'; el.style.marginTop = '12px'; el.innerHTML = '<h3>Extracted Text</h3><pre id="ocr-text" style="white-space:pre-wrap; word-break:break-word; margin:0; padding:8px; background:rgba(0,0,0,0.2); border-radius:8px"></pre>';
+      document.getElementById('preview').parentNode.insertBefore(el, document.getElementById('preview').nextSibling);
+      const pre = document.getElementById('ocr-text'); if(pre) pre.textContent = text || '';
+      if(ocrStatus) ocrStatus.textContent = 'OCR Complete';
+      if(importStatus) importStatus.textContent = 'OCR Complete';
+      const ledger = parsePortfolioOCR(); renderInlineLedgerCard(ledger); renderDashboardLedgerTable(); populateInlineLedgerTable();
     }catch(err){ console.error('OCR run failed', err); ocrStatus.textContent = 'OCR failed'; importStatus.textContent = 'OCR failed'; }
   });
 
@@ -182,6 +187,5 @@
     ledgerCards.innerHTML = '';
     if(ledger.length === 0){ const msg = document.createElement('div'); msg.className = 'card'; msg.textContent = 'No holdings found in OCR data.'; ledgerCards.appendChild(msg); return; }
     for(const h of ledger){ const card = document.createElement('div'); card.className = 'holding-card'; const title = document.createElement('h4'); title.textContent = h.name || (h.code || 'Unknown'); card.appendChild(title); const codeRow = document.createElement('div'); codeRow.className = 'holding-row'; codeRow.innerHTML = `<div class="muted">証券コード</div><div>${h.code || '—'}</div>`; card.appendChild(codeRow); const valRow = document.createElement('div'); valRow.className = 'holding-row'; valRow.innerHTML = `<div class="muted">評価額</div><div>${h.value !== null ? h.value.toLocaleString() + '円' : '—'}</div>`; card.appendChild(valRow); ledgerCards.appendChild(card); }
-  }
 
-})();
+}
