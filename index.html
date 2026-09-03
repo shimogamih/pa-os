@@ -1,137 +1,453 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
   <title>PA-OS — Dark Fantasy Dashboard</title>
+
   <link rel="stylesheet" href="style.css">
-  <!-- Tesseract.js placeholder (loaded but not used for analysis yet) -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js" defer></script>
+
+  <!-- Tesseract.js -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js"
+    defer
+  ></script>
 </head>
+
 <body>
-  <div id="app" class="app">
-    <header class="topbar">
-      <h1 class="title">PA-OS</h1>
-      <nav class="meta">
-        <button id="open-import" class="btn">Import Portfolio</button>
-        <button id="open-ledger" class="btn">Portfolio Ledger</button>
-      </nav>
-    </header>
 
-    <main class="container">
-      <section class="left-panel">
-        <div class="card guild-master">
-          <h2>Guild Master</h2>
-          <div id="guild-master-avatar" class="avatar-placeholder">GM</div>
-          <p class="muted">Leader of the guild. Tracks overall progress.</p>
+<div id="app" class="app">
+
+  <!-- =========================
+       TOP BAR
+  ========================== -->
+  <header class="topbar">
+
+    <h1 class="title">PA-OS</h1>
+
+    <nav class="meta">
+
+      <button
+        id="open-import"
+        class="btn"
+        type="button"
+      >
+        Import Portfolio
+      </button>
+
+      <button
+        id="open-ledger"
+        class="btn"
+        type="button"
+      >
+        Portfolio Ledger
+      </button>
+
+    </nav>
+
+  </header>
+
+
+  <!-- =========================
+       MAIN
+  ========================== -->
+  <main class="container">
+
+    <!-- LEFT PANEL -->
+    <section class="left-panel">
+
+      <!-- Guild Master -->
+      <div class="card guild-master">
+
+        <h2>Guild Master</h2>
+
+        <div
+          id="guild-master-avatar"
+          class="avatar-placeholder"
+        >
+          GM
         </div>
 
-        <div class="card guild-members">
-          <h2>Guild Members</h2>
-          <ul id="members-list" class="members-list">
-            <li>Member A</li>
-            <li>Member B</li>
-            <li>Member C</li>
-          </ul>
+        <p class="muted">
+          Leader of the guild. Tracks overall progress.
+        </p>
+
+      </div>
+
+
+      <!-- Guild Members -->
+      <div class="card guild-members">
+
+        <h2>Guild Members</h2>
+
+        <ul
+          id="members-list"
+          class="members-list"
+        >
+          <li>Member A</li>
+          <li>Member B</li>
+          <li>Member C</li>
+        </ul>
+
+      </div>
+
+
+      <!-- Boss -->
+      <div class="card boss">
+
+        <h2>Boss</h2>
+
+        <p class="muted">
+          The looming market boss. Prepare your strategy.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- RIGHT PANEL -->
+    <section class="right-panel">
+
+
+      <!-- =========================
+           DASHBOARD
+      ========================== -->
+
+      <div class="cards-grid">
+
+        <div class="card dashboard-card">
+
+          <h3>Portfolio Value</h3>
+
+          <p
+            class="large"
+            id="portfolio-value"
+          >
+            —
+          </p>
+
         </div>
 
-        <div class="card boss">
-          <h2>Boss</h2>
-          <p class="muted">The looming market boss. Prepare your strategy.</p>
-        </div>
-      </section>
 
-      <section class="right-panel">
-        <div class="cards-grid">
-          <div class="card dashboard-card">
-            <h3>Portfolio Value</h3>
-            <p class="large" id="portfolio-value">—</p>
-          </div>
-          <div class="card dashboard-card">
-            <h3>Daily Change</h3>
-            <p class="large" id="daily-change">—</p>
-          </div>
-          <div class="card dashboard-card">
-            <h3>Open P&L</h3>
-            <p class="large" id="open-pl">—</p>
-          </div>
-          <div class="card dashboard-card">
-            <h3>Cash</h3>
-            <p class="large" id="cash">—</p>
-          </div>
+        <div class="card dashboard-card">
+
+          <h3>Daily Change</h3>
+
+          <p
+            class="large"
+            id="daily-change"
+          >
+            —
+          </p>
+
         </div>
 
-        <div class="card upload-card">
-          <h2>Portfolio Screenshot</h2>
-          <p class="muted">Upload a screenshot to import your portfolio. Works on iPhone.</p>
 
-<!-- Single hidden input -->
-<input
-  id="portfolio-input"
-  type="file"
-  accept="image/*"
-  style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;border:0;padding:0;margin:0;"
+        <div class="card dashboard-card">
+
+          <h3>Open P&amp;L</h3>
+
+          <p
+            class="large"
+            id="open-pl"
+          >
+            —
+          </p>
+
+        </div>
+
+
+        <div class="card dashboard-card">
+
+          <h3>Cash</h3>
+
+          <p
+            class="large"
+            id="cash"
+          >
+            —
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           PORTFOLIO SCREENSHOT
+      ========================== -->
+
+      <div class="card upload-card">
+
+        <h2>Portfolio Screenshot</h2>
+
+        <p class="muted">
+          Upload a screenshot to import your portfolio.
+          Works on iPhone.
+        </p>
+
+
+        <!--
+          IMPORTANT:
+          There is exactly ONE file input in the entire page.
+
+          It is intentionally hidden visually,
+          but NOT display:none,
+          so iPhone Safari can still use input.click().
+        -->
+
+        <input
+          id="portfolio-input"
+          type="file"
+          accept="image/*"
+          aria-hidden="true"
+          tabindex="-1"
+          style="
+            position:fixed;
+            left:-10000px;
+            top:0;
+            width:1px;
+            height:1px;
+            opacity:0;
+            pointer-events:none;
+          "
+        >
+
+
+        <!--
+          Visible button.
+          JavaScript opens #portfolio-input.
+        -->
+
+        <button
+          id="choose-photo-btn"
+          class="file-btn"
+          type="button"
+        >
+          Choose or Take Photo
+        </button>
+
+
+        <!-- Preview -->
+        <div
+          id="preview"
+          class="preview"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- Import status -->
+        <div
+          id="import-status"
+          class="import-status"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- OCR -->
+        <div class="ocr-area">
+
+          <button
+            id="ocr-btn"
+            class="btn muted"
+            type="button"
+          >
+            Run OCR (placeholder)
+          </button>
+
+          <div
+            id="ocr-status"
+            class="muted small"
+          >
+            OCR: ready (placeholder)
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =========================
+       FOOTER
+  ========================== -->
+
+  <footer class="footer muted">
+
+    <small>
+      Dark Fantasy UI — PA-OS
+    </small>
+
+  </footer>
+
+</div>
+
+
+<!-- =========================
+     IMPORT MODAL
+========================== -->
+
+<div
+  id="import-modal"
+  class="modal"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
 >
 
-<!-- Visible upload button -->
-<button id="choose-photo-btn" class="file-btn" type="button">
-  Choose or Take Photo
-</button>
+  <div class="modal-sheet">
 
-          <div id="preview" class="preview" aria-live="polite"></div>
-          <div id="import-status" class="import-status"></div>
+    <h2>Import Portfolio</h2>
 
-          <div class="ocr-area">
-            <button id="ocr-btn" class="btn muted">Run OCR (placeholder)</button>
-            <div id="ocr-status" class="muted small">OCR: ready (placeholder)</div>
-          </div>
-        </div>
-      </section>
-    </main>
+    <p class="muted">
+      To get started, import a portfolio screenshot.
+      We'll save it locally on your device.
+    </p>
 
-    <footer class="footer muted">
-      <small>Dark Fantasy UI — PA-OS</small>
-    </footer>
+
+    <!--
+      IMPORTANT:
+      This is NOT a label.
+      It uses the SAME #portfolio-input.
+    -->
+
+    <button
+      id="modal-select-photo"
+      class="file-btn"
+      type="button"
+    >
+      Select Screenshot
+    </button>
+
+
+    <div
+      id="modal-status"
+      class="import-status"
+      aria-live="polite"
+    ></div>
+
+
+    <button
+      id="modal-close"
+      class="btn secondary"
+      type="button"
+    >
+      Later
+    </button>
+
   </div>
 
-  <!-- Portfolio Import modal (shows on first launch) -->
-  <div id="import-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-sheet">
-      <h2>Import Portfolio</h2>
-      <p class="muted">To get started, import a portfolio screenshot. We'll save it locally on your device.</
+</div>
 
-      <div id="modal-status" class="import-status"></div>
-      <button id="modal-close" class="btn secondary">Later</button>
+
+<!-- =========================
+     LEDGER SCREEN
+========================== -->
+
+<div
+  id="ledger-screen"
+  class="ledger-screen"
+  aria-hidden="true"
+>
+
+  <div class="ledger-sheet">
+
+    <div class="ledger-header">
+
+      <h2>Portfolio Ledger</h2>
+
+      <button
+        id="close-ledger"
+        class="btn secondary"
+        type="button"
+      >
+        Back
+      </button>
+
     </div>
-  </div>
 
-  <!-- Portfolio Ledger screen -->
-  <div id="ledger-screen" class="ledger-screen" aria-hidden="true">
-    <div class="ledger-sheet">
-      <div class="ledger-header">
-        <h2>Portfolio Ledger</h2>
-        <button id="close-ledger" class="btn secondary">Back</button>
-      </div>
-      <div class="ledger-summary">
-        <div class="summary-item">
-          <div class="muted">Total Assets</div>
-          <div id="total-assets" class="large">—</div>
+
+    <div class="ledger-summary">
+
+      <div class="summary-item">
+
+        <div class="muted">
+          Total Assets
         </div>
-        <div class="summary-item">
-          <div class="muted">Total Profit/Loss</div>
-          <div id="total-profit" class="large">—</div>
+
+        <div
+          id="total-assets"
+          class="large"
+        >
+          —
         </div>
-        <div class="summary-item">
-          <div class="muted">Number of Holdings</div>
-          <div id="num-holdings" class="large">0</div>
-        </div>
+
       </div>
 
-      <div id="ledger-cards" class="ledger-cards"></div>
+
+      <div class="summary-item">
+
+        <div class="muted">
+          Total Profit/Loss
+        </div>
+
+        <div
+          id="total-profit"
+          class="large"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="summary-item">
+
+        <div class="muted">
+          Number of Holdings
+        </div>
+
+        <div
+          id="num-holdings"
+          class="large"
+        >
+          0
+        </div>
+
+      </div>
+
     </div>
+
+
+    <div
+      id="ledger-cards"
+      class="ledger-cards"
+    ></div>
+
   </div>
 
-  <script src="script.js" defer></script>
+</div>
+
+
+<!-- =========================
+     MAIN JAVASCRIPT
+========================== -->
+
+<script src="script.js" defer></script>
+
 </body>
 </html>
