@@ -641,27 +641,97 @@
 
   /*
    * ------------------------------------------------------------
-   * OCR placeholder
+   * OCR using Tesseract.js
    * ------------------------------------------------------------
    */
 
-  function runOCRPlaceholder() {
+  async function runOCR() {
 
-    const status =
-      $("ocr-status");
+    const status = $("ocr-status");
 
     if (status) {
-
-      status.textContent =
-        "OCR: placeholder — analysis not connected yet.";
+      status.textContent = "OCR: initializing...";
     }
 
+    // Determine the image source: prefer saved image, fall back to preview img
+    let imageSrc = loadSavedPortfolioImage();
 
-    /*
-     * We intentionally do not run OCR automatically.
-     *
-     * The screenshot import itself must work independently.
-     */
+    if (!imageSrc) {
+      const preview = $("preview");
+      const img = preview && preview.querySelector && preview.querySelector("img");
+      if (img && img.src) {
+        imageSrc = img.src;
+      }
+    }
+
+    if (!imageSrc) {
+      setText("ocr-status", "OCR: no image available. Please upload a screenshot first.");
+      return;
+    }
+
+    if (!window.Tesseract || typeof window.Tesseract.recognize !== "function") {
+      setText("ocr-status", "OCR: Tesseract.js not loaded or unsupported version.");
+      return;
+    }
+
+    // Create or reuse OCR result container (added dynamically so index.html is unchanged)
+    let resultEl = $("ocr-result");
+
+    if (!resultEl) {
+      resultEl = document.createElement("pre");
+      resultEl.id = "ocr-result";
+      resultEl.className = "ocr-result muted";
+      resultEl.style.whiteSpace = "pre-wrap";
+      resultEl.style.maxHeight = "240px";
+      resultEl.style.overflow = "auto";
+      resultEl.style.marginTop = "8px";
+
+      const statusParent = status && status.parentNode;
+      if (statusParent) {
+        statusParent.appendChild(resultEl);
+      } else {
+        const preview = $("preview");
+        if (preview) preview.appendChild(resultEl);
+      }
+    }
+
+    resultEl.textContent = "";
+
+    try {
+      // Use Tesseract.recognize with logger to report progress
+      const res = await Tesseract.recognize(
+        imageSrc,
+        "eng",
+        {
+          logger: (m) => {
+            // m: { status, progress }
+            try {
+              if (!status) return;
+
+              if (m && typeof m.progress === "number") {
+                const percent = Math.round(m.progress * 100);
+                status.textContent = `OCR: ${m.status || "progress"} — ${percent}%`;
+              } else if (m && m.status) {
+                status.textContent = `OCR: ${m.status}`;
+              }
+            } catch (e) {
+              // ignore logger errors
+            }
+          }
+        }
+      );
+
+      const text = (res && res.data && res.data.text) ? res.data.text : "";
+
+      setText("ocr-status", "OCR: complete");
+
+      resultEl.textContent = text || "(no text recognized)";
+
+    } catch (error) {
+      console.error("PA-OS: OCR failed", error);
+      setText("ocr-status", "OCR: failed. See console for details.");
+      resultEl.textContent = "";
+    }
   }
 
 
@@ -972,7 +1042,7 @@
           "click",
           () => {
 
-            runOCRPlaceholder();
+            runOCR();
 
           }
         );
@@ -1053,6 +1123,7 @@
       );
 
     }
+  }
   );
 
 })();
