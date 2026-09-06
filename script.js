@@ -9,7 +9,6 @@
    */
 
   const SCREENSHOT_KEY = "portfolio_image";
-
   const PREVIOUS_SCREENSHOT_KEY = "paos_screenshot_v1";
 
 
@@ -53,7 +52,6 @@
     const image = document.createElement("img");
 
     image.src = dataURL;
-
     image.alt = "Portfolio screenshot preview";
 
     image.style.maxWidth = "100%";
@@ -102,11 +100,9 @@
       let dataURL =
         localStorage.getItem(SCREENSHOT_KEY);
 
+
       /*
-       * Backward compatibility.
-       *
-       * If an older version saved the screenshot
-       * under paos_screenshot_v1, migrate it.
+       * Backward compatibility
        */
 
       if (!dataURL) {
@@ -115,6 +111,7 @@
           localStorage.getItem(
             PREVIOUS_SCREENSHOT_KEY
           );
+
 
         if (dataURL) {
 
@@ -134,6 +131,7 @@
           }
         }
       }
+
 
       return dataURL || null;
 
@@ -208,10 +206,10 @@
 
   /*
    * ------------------------------------------------------------
-   * Optional image compression
+   * Image resize
    *
-   * If canvas processing fails,
-   * the original data URL is used.
+   * Large screenshots are resized before OCR.
+   * Original image remains fallback.
    * ------------------------------------------------------------
    */
 
@@ -248,10 +246,6 @@
             return;
           }
 
-
-          /*
-           * Don't enlarge images.
-           */
 
           const scale =
             Math.min(
@@ -309,6 +303,7 @@
 
           let result;
 
+
           try {
 
             result =
@@ -330,7 +325,9 @@
           }
 
 
-          resolve(result || dataURL);
+          resolve(
+            result || dataURL
+          );
 
         } catch (error) {
 
@@ -346,12 +343,8 @@
 
       image.onerror = () => {
 
-        /*
-         * Do NOT fail the import.
-         * Use the original FileReader result.
-         */
-
         resolve(dataURL);
+
       };
 
 
@@ -390,7 +383,7 @@
 
       /*
        * STEP 1
-       * FileReader
+       * Read file
        */
 
       const originalDataURL =
@@ -399,8 +392,7 @@
 
       /*
        * STEP 2
-       * Resize if possible.
-       * Original remains fallback.
+       * Resize
        */
 
       const finalDataURL =
@@ -420,31 +412,6 @@
         );
 
 
-      if (!saved) {
-
-        /*
-         * Even if localStorage is full,
-         * still show the preview.
-         */
-
-        showPreviewFromDataURL(
-          finalDataURL
-        );
-
-        setText(
-          "import-status",
-          "Image loaded. Local save failed."
-        );
-
-        setText(
-          "modal-status",
-          "Image loaded."
-        );
-
-        return;
-      }
-
-
       /*
        * STEP 4
        * Preview
@@ -460,24 +427,39 @@
        * Status
        */
 
-      setText(
-        "import-status",
-        "Image saved. Ready for OCR."
-      );
+      if (saved) {
 
+        setText(
+          "import-status",
+          "Image saved. Ready for OCR."
+        );
 
-      setText(
-        "modal-status",
-        "Image saved. Ready for OCR."
-      );
+        setText(
+          "modal-status",
+          "Image saved. Ready for OCR."
+        );
+
+      } else {
+
+        setText(
+          "import-status",
+          "Image loaded. Local save failed."
+        );
+
+        setText(
+          "modal-status",
+          "Image loaded."
+        );
+      }
 
 
       /*
        * STEP 6
-       * Close modal automatically.
+       * Close modal
        */
 
       closeImportModal();
+
 
     } catch (error) {
 
@@ -497,14 +479,13 @@
         "modal-status",
         "Failed to read image."
       );
-
     }
   }
 
 
   /*
    * ------------------------------------------------------------
-   * Import modal
+   * Import Modal
    * ------------------------------------------------------------
    */
 
@@ -564,11 +545,6 @@
     }
 
 
-    /*
-     * Keep the existing empty-state behavior.
-     * OCR/portfolio parsing can populate this later.
-     */
-
     ledger.innerHTML = `
       <div class="card">
         <h3>Portfolio</h3>
@@ -584,10 +560,12 @@
       "—"
     );
 
+
     setText(
       "total-profit",
       "—"
     );
+
 
     setText(
       "num-holdings",
@@ -640,105 +618,424 @@
 
 
   /*
-   * ------------------------------------------------------------
-   * OCR using Tesseract.js
-   * ------------------------------------------------------------
+   * ============================================================
+   * OCR
+   * ============================================================
+   *
+   * Tesseract.js v2.1.5
+   *
+   * Japanese + English
+   *
+   * Language:
+   *   jpn
+   *
+   * NOTE:
+   * The Japanese trained data is downloaded automatically
+   * by Tesseract.js when recognize() is called.
+   * ============================================================
    */
 
   async function runOCR() {
 
-    const status = $("ocr-status");
+    const status =
+      $("ocr-status");
+
+
+    const button =
+      $("ocr-btn");
+
+
+    /*
+     * Prevent accidental double-click
+     */
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = "OCR Running...";
+    }
+
 
     if (status) {
-      status.textContent = "OCR: initializing...";
+      status.textContent =
+        "OCR: initializing...";
     }
 
-    // Determine the image source: prefer saved image, fall back to preview img
-    let imageSrc = loadSavedPortfolioImage();
+
+    /*
+     * ----------------------------------------------------------
+     * Find image
+     * ----------------------------------------------------------
+     */
+
+    let imageSrc =
+      loadSavedPortfolioImage();
+
+
+    /*
+     * Fallback to preview image
+     */
 
     if (!imageSrc) {
-      const preview = $("preview");
-      const img = preview && preview.querySelector && preview.querySelector("img");
-      if (img && img.src) {
-        imageSrc = img.src;
+
+      const preview =
+        $("preview");
+
+
+      const image =
+        preview &&
+        preview.querySelector &&
+        preview.querySelector("img");
+
+
+      if (
+        image &&
+        image.src
+      ) {
+
+        imageSrc =
+          image.src;
       }
     }
 
+
+    /*
+     * No image
+     */
+
     if (!imageSrc) {
-      setText("ocr-status", "OCR: no image available. Please upload a screenshot first.");
-      return;
-    }
 
-    if (!window.Tesseract || typeof window.Tesseract.recognize !== "function") {
-      setText("ocr-status", "OCR: Tesseract.js not loaded or unsupported version.");
-      return;
-    }
-
-    // Create or reuse OCR result container (added dynamically so index.html is unchanged)
-    let resultEl = $("ocr-result");
-
-    if (!resultEl) {
-      resultEl = document.createElement("pre");
-      resultEl.id = "ocr-result";
-      resultEl.className = "ocr-result muted";
-      resultEl.style.whiteSpace = "pre-wrap";
-      resultEl.style.maxHeight = "240px";
-      resultEl.style.overflow = "auto";
-      resultEl.style.marginTop = "8px";
-
-      const statusParent = status && status.parentNode;
-      if (statusParent) {
-        statusParent.appendChild(resultEl);
-      } else {
-        const preview = $("preview");
-        if (preview) preview.appendChild(resultEl);
-      }
-    }
-
-    resultEl.textContent = "";
-
-    try {
-      // Use Tesseract.recognize with logger to report progress
-      const res = await Tesseract.recognize(
-        imageSrc,
-        "eng",
-        {
-          logger: (m) => {
-            // m: { status, progress }
-            try {
-              if (!status) return;
-
-              if (m && typeof m.progress === "number") {
-                const percent = Math.round(m.progress * 100);
-                status.textContent = `OCR: ${m.status || "progress"} — ${percent}%`;
-              } else if (m && m.status) {
-                status.textContent = `OCR: ${m.status}`;
-              }
-            } catch (e) {
-              // ignore logger errors
-            }
-          }
-        }
+      setText(
+        "ocr-status",
+        "OCR: no image available. Please upload a screenshot first."
       );
 
-      const text = (res && res.data && res.data.text) ? res.data.text : "";
 
-      setText("ocr-status", "OCR: complete");
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Run OCR";
+      }
 
-      resultEl.textContent = text || "(no text recognized)";
+
+      return;
+    }
+
+
+    /*
+     * ----------------------------------------------------------
+     * Check Tesseract
+     * ----------------------------------------------------------
+     */
+
+    if (
+      !window.Tesseract ||
+      typeof window.Tesseract.recognize !== "function"
+    ) {
+
+      setText(
+        "ocr-status",
+        "OCR: Tesseract.js is not loaded."
+      );
+
+
+      console.error(
+        "PA-OS: Tesseract.js not available."
+      );
+
+
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Run OCR";
+      }
+
+
+      return;
+    }
+
+
+    /*
+     * ----------------------------------------------------------
+     * OCR result container
+     * ----------------------------------------------------------
+     */
+
+    let resultEl =
+      $("ocr-result");
+
+
+    if (!resultEl) {
+
+      resultEl =
+        document.createElement("pre");
+
+
+      resultEl.id =
+        "ocr-result";
+
+
+      resultEl.className =
+        "ocr-result";
+
+
+      resultEl.style.whiteSpace =
+        "pre-wrap";
+
+
+      resultEl.style.wordBreak =
+        "break-word";
+
+
+      resultEl.style.maxHeight =
+        "300px";
+
+
+      resultEl.style.overflow =
+        "auto";
+
+
+      resultEl.style.marginTop =
+        "12px";
+
+
+      resultEl.style.padding =
+        "12px";
+
+
+      resultEl.style.borderRadius =
+        "10px";
+
+
+      resultEl.style.background =
+        "rgba(0,0,0,0.25)";
+
+
+      resultEl.style.border =
+        "1px solid rgba(255,255,255,0.08)";
+
+
+      const ocrArea =
+        document.querySelector(
+          ".ocr-area"
+        );
+
+
+      if (ocrArea) {
+
+        ocrArea.appendChild(
+          resultEl
+        );
+
+      } else if (status) {
+
+        status.parentNode.appendChild(
+          resultEl
+        );
+      }
+    }
+
+
+    resultEl.textContent =
+      "";
+
+
+    /*
+     * ----------------------------------------------------------
+     * Start OCR
+     * ----------------------------------------------------------
+     */
+
+    try {
+
+      setText(
+        "ocr-status",
+        "OCR: loading Japanese language data..."
+      );
+
+
+      /*
+       * Tesseract.js v2 syntax
+       *
+       * Japanese OCR
+       */
+
+      const result =
+        await Tesseract.recognize(
+          imageSrc,
+          "jpn",
+          {
+
+            logger: function(message) {
+
+              try {
+
+                if (!status) {
+                  return;
+                }
+
+
+                /*
+                 * Progress percentage
+                 */
+
+                if (
+                  message &&
+                  typeof message.progress === "number"
+                ) {
+
+                  const percent =
+                    Math.round(
+                      message.progress * 100
+                    );
+
+
+                  let currentStatus =
+                    message.status ||
+                    "processing";
+
+
+                  /*
+                   * Make status human readable
+                   */
+
+                  if (
+                    currentStatus ===
+                    "loading tesseract core"
+                  ) {
+
+                    currentStatus =
+                      "loading OCR engine";
+
+                  } else if (
+                    currentStatus ===
+                    "initializing tesseract"
+                  ) {
+
+                    currentStatus =
+                      "initializing";
+
+                  } else if (
+                    currentStatus ===
+                    "loading language traineddata"
+                  ) {
+
+                    currentStatus =
+                      "loading Japanese data";
+
+                  } else if (
+                    currentStatus ===
+                    "recognizing text"
+                  ) {
+
+                    currentStatus =
+                      "recognizing text";
+                  }
+
+
+                  status.textContent =
+                    `OCR: ${currentStatus} — ${percent}%`;
+                }
+
+              } catch (error) {
+
+                console.warn(
+                  "PA-OS: OCR logger error",
+                  error
+                );
+              }
+            }
+
+          }
+        );
+
+
+      /*
+       * --------------------------------------------------------
+       * Extract text
+       * --------------------------------------------------------
+       */
+
+      const text =
+        result &&
+        result.data &&
+        typeof result.data.text === "string"
+          ? result.data.text.trim()
+          : "";
+
+
+      /*
+       * --------------------------------------------------------
+       * Complete
+       * --------------------------------------------------------
+       */
+
+      setText(
+        "ocr-status",
+        "OCR: complete"
+      );
+
+
+      if (text) {
+
+        resultEl.textContent =
+          text;
+
+      } else {
+
+        resultEl.textContent =
+          "(No text recognized)";
+      }
+
+
+      console.log(
+        "PA-OS: OCR completed."
+      );
+
+
+      console.log(
+        "PA-OS: OCR text:",
+        text
+      );
+
 
     } catch (error) {
-      console.error("PA-OS: OCR failed", error);
-      setText("ocr-status", "OCR: failed. See console for details.");
-      resultEl.textContent = "";
+
+      console.error(
+        "PA-OS: OCR failed",
+        error
+      );
+
+
+      setText(
+        "ocr-status",
+        "OCR: failed. Check console for details."
+      );
+
+
+      resultEl.textContent =
+        "";
+
+
+    } finally {
+
+      /*
+       * Re-enable button
+       */
+
+      if (button) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Run OCR";
+      }
     }
   }
 
 
   /*
-   * ------------------------------------------------------------
+   * ============================================================
    * Initialize
-   * ------------------------------------------------------------
+   * ============================================================
    */
 
   document.addEventListener(
@@ -752,30 +1049,37 @@
 
       /*
        * --------------------------------------------------------
-       * Get DOM elements
+       * DOM elements
        * --------------------------------------------------------
        */
 
       const input =
         $("portfolio-input");
 
+
       const chooseButton =
         $("choose-photo-btn");
+
 
       const modalSelectButton =
         $("modal-select-photo");
 
+
       const openImportButton =
         $("open-import");
+
 
       const closeModalButton =
         $("modal-close");
 
+
       const openLedgerButton =
         $("open-ledger");
 
+
       const closeLedgerButton =
         $("close-ledger");
+
 
       const ocrButton =
         $("ocr-btn");
@@ -783,15 +1087,14 @@
 
       /*
        * --------------------------------------------------------
-       * IMPORTANT:
-       * File input must exist.
+       * File Input
        * --------------------------------------------------------
        */
 
       if (!input) {
 
         console.error(
-          "PA-OS ERROR: #portfolio-input was not found."
+          "PA-OS ERROR: #portfolio-input not found."
         );
 
       } else {
@@ -802,9 +1105,17 @@
 
 
         /*
-         * ------------------------------------------------------
+         * Ensure image selection
+         */
+
+        input.setAttribute(
+          "accept",
+          "image/*"
+        );
+
+
+        /*
          * SINGLE CHANGE HANDLER
-         * ------------------------------------------------------
          */
 
         input.addEventListener(
@@ -839,24 +1150,33 @@
             );
 
 
-            await handleFileInput(file);
+            /*
+             * Process image
+             */
+
+            await handleFileInput(
+              file
+            );
 
 
             /*
-             * Clear the input.
+             * Clear input.
              *
-             * This allows the user to select
-             * the exact same image again.
+             * This is important because
+             * iPhone Safari otherwise may not
+             * fire change when the same image
+             * is selected again.
              */
 
             try {
 
-              event.target.value = "";
+              event.target.value =
+                "";
 
             } catch (error) {
 
               console.warn(
-                "PA-OS: unable to clear file input.",
+                "PA-OS: could not clear file input.",
                 error
               );
             }
@@ -869,7 +1189,7 @@
 
       /*
        * --------------------------------------------------------
-       * MAIN "Choose or Take Photo" BUTTON
+       * MAIN PHOTO BUTTON
        * --------------------------------------------------------
        */
 
@@ -881,6 +1201,7 @@
 
             event.preventDefault();
 
+
             console.log(
               "PA-OS: Choose or Take Photo clicked."
             );
@@ -889,7 +1210,7 @@
             if (!input) {
 
               console.error(
-                "PA-OS: cannot open picker because #portfolio-input is missing."
+                "PA-OS: #portfolio-input missing."
               );
 
               return;
@@ -897,13 +1218,22 @@
 
 
             /*
-             * This call happens directly inside
-             * the user click event.
+             * Direct user gesture.
              *
-             * This is important for iPhone Safari.
+             * Important for iPhone Safari.
              */
 
-            input.click();
+            try {
+
+              input.click();
+
+            } catch (error) {
+
+              console.error(
+                "PA-OS: input.click() failed.",
+                error
+              );
+            }
 
           },
           false
@@ -912,14 +1242,14 @@
       } else {
 
         console.error(
-          "PA-OS ERROR: #choose-photo-btn was not found."
+          "PA-OS ERROR: #choose-photo-btn not found."
         );
       }
 
 
       /*
        * --------------------------------------------------------
-       * MODAL "Select Screenshot"
+       * MODAL PHOTO BUTTON
        * --------------------------------------------------------
        */
 
@@ -930,6 +1260,7 @@
           (event) => {
 
             event.preventDefault();
+
 
             console.log(
               "PA-OS: modal Select Screenshot clicked."
@@ -946,7 +1277,17 @@
             }
 
 
-            input.click();
+            try {
+
+              input.click();
+
+            } catch (error) {
+
+              console.error(
+                "PA-OS: modal input.click() failed.",
+                error
+              );
+            }
 
           },
           false
@@ -1031,12 +1372,23 @@
 
 
       /*
-       * --------------------------------------------------------
-       * OCR
-       * --------------------------------------------------------
+       * ========================================================
+       * OCR BUTTON
+       * ========================================================
+       *
+       * IMPORTANT:
+       * There is exactly ONE OCR click handler.
+       *
+       * No placeholder handler.
+       * No duplicate handler.
+       * ========================================================
        */
 
       if (ocrButton) {
+
+        ocrButton.textContent =
+          "Run OCR";
+
 
         ocrButton.addEventListener(
           "click",
@@ -1044,14 +1396,26 @@
 
             runOCR();
 
-          }
+          },
+          false
+        );
+
+
+        console.log(
+          "PA-OS: OCR button connected."
+        );
+
+      } else {
+
+        console.error(
+          "PA-OS ERROR: #ocr-btn not found."
         );
       }
 
 
       /*
        * --------------------------------------------------------
-       * Load previously saved screenshot
+       * Load saved screenshot
        * --------------------------------------------------------
        */
 
@@ -1086,17 +1450,11 @@
 
       /*
        * --------------------------------------------------------
-       * Initial modal behavior
-       *
-       * Do not force it open if a screenshot already exists.
+       * Initial modal
        * --------------------------------------------------------
        */
 
       if (!savedImage) {
-
-        /*
-         * Small delay so the page finishes rendering first.
-         */
 
         setTimeout(
           () => {
@@ -1118,12 +1476,17 @@
       renderLedger();
 
 
+      /*
+       * --------------------------------------------------------
+       * Finished
+       * --------------------------------------------------------
+       */
+
       console.log(
         "PA-OS: initialization complete."
       );
 
     }
-  }
   );
 
 })();
