@@ -860,7 +860,7 @@
       const result =
         await Tesseract.recognize(
           imageSrc,
-          "jpn",
+          "jpn+eng",
           {
 
             logger: function(message) {
