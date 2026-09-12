@@ -1,1492 +1,509 @@
-(() => {
-  "use strict";
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-  /*
-   * ============================================================
-   * PA-OS
-   * Portfolio Screenshot / Preview / Local Storage / OCR
-   * ============================================================
-   */
+  <title>PA-OS | Portfolio AI Guild</title>
 
-  const SCREENSHOT_KEY = "portfolio_image";
-  const PREVIOUS_SCREENSHOT_KEY = "paos_screenshot_v1";
+  <link rel="stylesheet" href="style.css">
+</head>
 
+<body>
 
-  /*
-   * ------------------------------------------------------------
-   * Utility
-   * ------------------------------------------------------------
-   */
+<div id="app">
 
-  function $(id) {
-    return document.getElementById(id);
-  }
+  <!-- =========================
+       HEADER
+  ========================== -->
 
+  <header class="topbar">
 
-  function setText(id, text) {
-    const element = $(id);
+    <div>
+      <div class="logo">PA-OS</div>
+      <div class="subtitle">PORTFOLIO AI GUILD</div>
+    </div>
 
-    if (element) {
-      element.textContent = text;
-    }
-  }
+    <div class="market-badge">
+      <span class="status-dot"></span>
+      <span id="market-status">MARKET READY</span>
+    </div>
 
+  </header>
 
-  /*
-   * ------------------------------------------------------------
-   * Preview
-   * ------------------------------------------------------------
-   */
 
-  function showPreviewFromDataURL(dataURL) {
+  <!-- =========================
+       START SCREEN
+  ========================== -->
 
-    const preview = $("preview");
+  <section id="start-screen" class="screen active">
 
-    if (!preview) {
-      console.warn("PA-OS: #preview not found");
-      return;
-    }
+    <div class="hero">
 
-    preview.innerHTML = "";
-
-    const image = document.createElement("img");
-
-    image.src = dataURL;
-    image.alt = "Portfolio screenshot preview";
-
-    image.style.maxWidth = "100%";
-    image.style.width = "100%";
-    image.style.height = "auto";
-    image.style.display = "block";
-    image.style.borderRadius = "12px";
-
-    preview.appendChild(image);
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * Local Storage
-   * ------------------------------------------------------------
-   */
-
-  function savePortfolioImage(dataURL) {
-
-    try {
-
-      localStorage.setItem(
-        SCREENSHOT_KEY,
-        dataURL
-      );
-
-      return true;
-
-    } catch (error) {
-
-      console.error(
-        "PA-OS: localStorage save failed",
-        error
-      );
-
-      return false;
-    }
-  }
-
-
-  function loadSavedPortfolioImage() {
-
-    try {
-
-      let dataURL =
-        localStorage.getItem(SCREENSHOT_KEY);
-
-
-      /*
-       * Backward compatibility
-       */
-
-      if (!dataURL) {
-
-        dataURL =
-          localStorage.getItem(
-            PREVIOUS_SCREENSHOT_KEY
-          );
-
-
-        if (dataURL) {
-
-          try {
-
-            localStorage.setItem(
-              SCREENSHOT_KEY,
-              dataURL
-            );
-
-          } catch (error) {
-
-            console.warn(
-              "PA-OS: old screenshot migration failed",
-              error
-            );
-          }
-        }
-      }
-
-
-      return dataURL || null;
-
-    } catch (error) {
-
-      console.error(
-        "PA-OS: localStorage read failed",
-        error
-      );
-
-      return null;
-    }
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * File -> Data URL
-   * ------------------------------------------------------------
-   */
-
-  function readFileAsDataURL(file) {
-
-    return new Promise((resolve, reject) => {
-
-      if (!file) {
-
-        reject(
-          new Error("No file selected.")
-        );
-
-        return;
-      }
-
-
-      const reader = new FileReader();
-
-
-      reader.onload = () => {
-
-        if (
-          typeof reader.result !== "string"
-        ) {
-
-          reject(
-            new Error(
-              "FileReader returned invalid data."
-            )
-          );
-
-          return;
-        }
-
-        resolve(reader.result);
-      };
-
-
-      reader.onerror = () => {
-
-        reject(
-          reader.error ||
-          new Error("FileReader failed.")
-        );
-      };
-
-
-      reader.readAsDataURL(file);
-
-    });
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * Image resize
-   *
-   * Large screenshots are resized before OCR.
-   * Original image remains fallback.
-   * ------------------------------------------------------------
-   */
-
-  function resizeImageDataURL(
-    dataURL,
-    maxWidth = 2000
-  ) {
-
-    return new Promise((resolve) => {
-
-      const image = new Image();
-
-
-      image.onload = () => {
-
-        try {
-
-          const originalWidth =
-            image.naturalWidth ||
-            image.width;
-
-          const originalHeight =
-            image.naturalHeight ||
-            image.height;
-
-
-          if (
-            !originalWidth ||
-            !originalHeight
-          ) {
-
-            resolve(dataURL);
-
-            return;
-          }
-
-
-          const scale =
-            Math.min(
-              1,
-              maxWidth / originalWidth
-            );
-
-
-          const width =
-            Math.max(
-              1,
-              Math.round(
-                originalWidth * scale
-              )
-            );
-
-
-          const height =
-            Math.max(
-              1,
-              Math.round(
-                originalHeight * scale
-              )
-            );
-
-
-          const canvas =
-            document.createElement("canvas");
-
-
-          canvas.width = width;
-          canvas.height = height;
-
-
-          const context =
-            canvas.getContext("2d");
-
-
-          if (!context) {
-
-            resolve(dataURL);
-
-            return;
-          }
-
-
-          context.drawImage(
-            image,
-            0,
-            0,
-            width,
-            height
-          );
-
-
-          let result;
-
-
-          try {
-
-            result =
-              canvas.toDataURL(
-                "image/jpeg",
-                0.9
-              );
-
-          } catch (error) {
-
-            console.warn(
-              "PA-OS: canvas conversion failed",
-              error
-            );
-
-            resolve(dataURL);
-
-            return;
-          }
-
-
-          resolve(
-            result || dataURL
-          );
-
-        } catch (error) {
-
-          console.warn(
-            "PA-OS: image processing failed",
-            error
-          );
-
-          resolve(dataURL);
-        }
-      };
-
-
-      image.onerror = () => {
-
-        resolve(dataURL);
-
-      };
-
-
-      image.src = dataURL;
-
-    });
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * Main file handler
-   * ------------------------------------------------------------
-   */
-
-  async function handleFileInput(file) {
-
-    if (!file) {
-      return;
-    }
-
-
-    setText(
-      "import-status",
-      "Reading image..."
-    );
-
-
-    setText(
-      "modal-status",
-      "Reading image..."
-    );
-
-
-    try {
-
-      /*
-       * STEP 1
-       * Read file
-       */
-
-      const originalDataURL =
-        await readFileAsDataURL(file);
-
-
-      /*
-       * STEP 2
-       * Resize
-       */
-
-      const finalDataURL =
-        await resizeImageDataURL(
-          originalDataURL
-        );
-
-
-      /*
-       * STEP 3
-       * Save
-       */
-
-      const saved =
-        savePortfolioImage(
-          finalDataURL
-        );
-
-
-      /*
-       * STEP 4
-       * Preview
-       */
-
-      showPreviewFromDataURL(
-        finalDataURL
-      );
-
-
-      /*
-       * STEP 5
-       * Status
-       */
-
-      if (saved) {
-
-        setText(
-          "import-status",
-          "Image saved. Ready for OCR."
-        );
-
-        setText(
-          "modal-status",
-          "Image saved. Ready for OCR."
-        );
-
-      } else {
-
-        setText(
-          "import-status",
-          "Image loaded. Local save failed."
-        );
-
-        setText(
-          "modal-status",
-          "Image loaded."
-        );
-      }
-
-
-      /*
-       * STEP 6
-       * Close modal
-       */
-
-      closeImportModal();
-
-
-    } catch (error) {
-
-      console.error(
-        "PA-OS: portfolio image import failed",
-        error
-      );
-
-
-      setText(
-        "import-status",
-        "Failed to read image."
-      );
-
-
-      setText(
-        "modal-status",
-        "Failed to read image."
-      );
-    }
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * Import Modal
-   * ------------------------------------------------------------
-   */
-
-  function openImportModal() {
-
-    const modal =
-      $("import-modal");
-
-    if (!modal) {
-      return;
-    }
-
-
-    modal.setAttribute(
-      "aria-hidden",
-      "false"
-    );
-
-
-    modal.classList.add("open");
-  }
-
-
-  function closeImportModal() {
-
-    const modal =
-      $("import-modal");
-
-    if (!modal) {
-      return;
-    }
-
-
-    modal.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    modal.classList.remove("open");
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * Ledger
-   * ------------------------------------------------------------
-   */
-
-  function renderLedger() {
-
-    const ledger =
-      $("ledger-cards");
-
-    if (!ledger) {
-      return;
-    }
-
-
-    ledger.innerHTML = `
-      <div class="card">
-        <h3>Portfolio</h3>
-        <p class="muted">
-          Import a portfolio screenshot to populate the ledger.
-        </p>
+      <div class="hero-emblem">
+        ⚔️
       </div>
-    `;
 
+      <div class="eyebrow">
+        PORTFOLIO ADVENTURE OS
+      </div>
 
-    setText(
-      "total-assets",
-      "—"
-    );
+      <h1>
+        あなたの資産を<br>
+        <span>最強のギルド</span>へ
+      </h1>
 
+      <p>
+        保有銘柄を仲間として分析し、<br>
+        ポートフォリオ全体の戦力を判定します。
+      </p>
 
-    setText(
-      "total-profit",
-      "—"
-    );
+      <button id="launch-btn" class="main-button">
+        <span>⚔</span>
+        ポートフォリオAI起動
+      </button>
 
+    </div>
 
-    setText(
-      "num-holdings",
-      "0"
-    );
-  }
 
+    <div class="sample-status">
 
-  function openLedger() {
+      <div>
+        <span>GUILD</span>
+        <strong>未編成</strong>
+      </div>
 
-    const screen =
-      $("ledger-screen");
+      <div>
+        <span>RANK</span>
+        <strong>---</strong>
+      </div>
 
-    if (!screen) {
-      return;
-    }
+      <div>
+        <span>SCORE</span>
+        <strong>---</strong>
+      </div>
 
+    </div>
 
-    screen.setAttribute(
-      "aria-hidden",
-      "false"
-    );
+  </section>
 
 
-    screen.classList.add("open");
+  <!-- =========================
+       DASHBOARD
+  ========================== -->
 
+  <section id="dashboard-screen" class="screen">
 
-    renderLedger();
-  }
+    <!-- Guild Header -->
 
+    <div class="guild-header">
 
-  function closeLedger() {
+      <div>
 
-    const screen =
-      $("ledger-screen");
+        <div class="eyebrow">
+          PORTFOLIO GUILD
+        </div>
 
-    if (!screen) {
-      return;
-    }
+        <h2 id="guild-name">
+          暁の資産騎士団
+        </h2>
 
+        <div class="guild-class" id="guild-class">
+          バランス型ギルド
+        </div>
 
-    screen.setAttribute(
-      "aria-hidden",
-      "true"
-    );
+      </div>
 
+      <div class="guild-rank">
 
-    screen.classList.remove("open");
-  }
+        <span>GUILD RANK</span>
 
+        <strong id="guild-rank">
+          A
+        </strong>
 
-  /*
-   * ============================================================
-   * OCR
-   * ============================================================
-   *
-   * Tesseract.js v2.1.5
-   *
-   * Japanese + English
-   *
-   * Language:
-   *   jpn
-   *
-   * NOTE:
-   * The Japanese trained data is downloaded automatically
-   * by Tesseract.js when recognize() is called.
-   * ============================================================
-   */
+      </div>
 
-  async function runOCR() {
+    </div>
 
-    const status =
-      $("ocr-status");
 
+    <!-- Overall Score -->
 
-    const button =
-      $("ocr-btn");
+    <div class="score-card">
 
+      <div>
 
-    /*
-     * Prevent accidental double-click
-     */
+        <span class="card-label">
+          PORTFOLIO POWER
+        </span>
 
-    if (button) {
-      button.disabled = true;
-      button.textContent = "OCR Running...";
-    }
+        <div class="score-number">
+          <strong id="overall-score">82</strong>
+          <span>/100</span>
+        </div>
 
+      </div>
 
-    if (status) {
-      status.textContent =
-        "OCR: initializing...";
-    }
+      <div class="score-description">
 
+        <strong id="score-title">
+          安定した強力なパーティ
+        </strong>
 
-    /*
-     * ----------------------------------------------------------
-     * Find image
-     * ----------------------------------------------------------
-     */
+        <p id="score-description">
+          防御力と継続戦力に優れています。
+        </p>
 
-    let imageSrc =
-      loadSavedPortfolioImage();
+      </div>
 
+    </div>
 
-    /*
-     * Fallback to preview image
-     */
 
-    if (!imageSrc) {
+    <!-- Today's Formation -->
 
-      const preview =
-        $("preview");
+    <div class="section-title">
 
+      <div>
+        <span class="eyebrow">TODAY'S FORMATION</span>
+        <h3>今日の陣形</h3>
+      </div>
 
-      const image =
-        preview &&
-        preview.querySelector &&
-        preview.querySelector("img");
+      <span class="formation-name">
+        鉄壁の布陣
+      </span>
 
+    </div>
 
-      if (
-        image &&
-        image.src
-      ) {
 
-        imageSrc =
-          image.src;
-      }
-    }
+    <div id="party" class="party-grid">
+      <!-- JavaScript -->
+    </div>
 
 
-    /*
-     * No image
-     */
+    <!-- MVP -->
 
-    if (!imageSrc) {
+    <div class="mvp-card">
 
-      setText(
-        "ocr-status",
-        "OCR: no image available. Please upload a screenshot first."
-      );
+      <div class="mvp-icon">
+        👑
+      </div>
 
+      <div>
 
-      if (button) {
-        button.disabled = false;
-        button.textContent = "Run OCR";
-      }
+        <span class="eyebrow">
+          TODAY'S MVP
+        </span>
 
+        <h3 id="mvp-name">
+          日本精工
+        </h3>
 
-      return;
-    }
+        <p id="mvp-text">
+          ギルドの防御力と安定性に大きく貢献。
+        </p>
 
+      </div>
 
-    /*
-     * ----------------------------------------------------------
-     * Check Tesseract
-     * ----------------------------------------------------------
-     */
+      <div class="mvp-score">
+        <strong id="mvp-score">91</strong>
+        <span>PTS</span>
+      </div>
 
-    if (
-      !window.Tesseract ||
-      typeof window.Tesseract.recognize !== "function"
-    ) {
+    </div>
 
-      setText(
-        "ocr-status",
-        "OCR: Tesseract.js is not loaded."
-      );
 
+    <!-- Risk -->
 
-      console.error(
-        "PA-OS: Tesseract.js not available."
-      );
+    <div class="section-title">
 
+      <div>
+        <span class="eyebrow">RISK ANALYSIS</span>
+        <h3>リスク分析</h3>
+      </div>
 
-      if (button) {
-        button.disabled = false;
-        button.textContent = "Run OCR";
-      }
+    </div>
 
 
-      return;
-    }
+    <div class="risk-card">
 
+      <div class="risk-row">
 
-    /*
-     * ----------------------------------------------------------
-     * OCR result container
-     * ----------------------------------------------------------
-     */
+        <div class="risk-name">
+          <span>Market Risk</span>
+          <strong id="market-risk-value">42</strong>
+        </div>
 
-    let resultEl =
-      $("ocr-result");
+        <div class="risk-bar">
+          <div id="market-risk-bar" style="width:42%"></div>
+        </div>
 
+      </div>
 
-    if (!resultEl) {
 
-      resultEl =
-        document.createElement("pre");
+      <div class="risk-row">
 
+        <div class="risk-name">
+          <span>Sector Risk</span>
+          <strong id="sector-risk-value">35</strong>
+        </div>
 
-      resultEl.id =
-        "ocr-result";
+        <div class="risk-bar">
+          <div id="sector-risk-bar" style="width:35%"></div>
+        </div>
 
+      </div>
 
-      resultEl.className =
-        "ocr-result";
 
+      <div class="risk-row">
 
-      resultEl.style.whiteSpace =
-        "pre-wrap";
+        <div class="risk-name">
+          <span>Concentration</span>
+          <strong id="concentration-risk-value">28</strong>
+        </div>
 
+        <div class="risk-bar">
+          <div id="concentration-risk-bar" style="width:28%"></div>
+        </div>
 
-      resultEl.style.wordBreak =
-        "break-word";
+      </div>
 
+    </div>
 
-      resultEl.style.maxHeight =
-        "300px";
 
+    <!-- Strategy -->
 
-      resultEl.style.overflow =
-        "auto";
+    <div class="section-title">
 
+      <div>
+        <span class="eyebrow">TODAY'S STRATEGY</span>
+        <h3>今日の作戦</h3>
+      </div>
 
-      resultEl.style.marginTop =
-        "12px";
+    </div>
 
 
-      resultEl.style.padding =
-        "12px";
+    <div class="strategy-grid">
 
+      <div class="strategy-card continue">
+        <span>📈</span>
+        <strong>積立継続</strong>
+        <small>GOOD</small>
+      </div>
 
-      resultEl.style.borderRadius =
-        "10px";
+      <div class="strategy-card wait">
+        <span>⏳</span>
+        <strong>押し目待ち</strong>
+        <small>WATCH</small>
+      </div>
 
+      <div class="strategy-card buy">
+        <span>⚔️</span>
+        <strong>買い候補</strong>
+        <small>READY</small>
+      </div>
 
-      resultEl.style.background =
-        "rgba(0,0,0,0.25)";
+      <div class="strategy-card sell">
+        <span>💰</span>
+        <strong>利益確定</strong>
+        <small>CHECK</small>
+      </div>
 
+    </div>
 
-      resultEl.style.border =
-        "1px solid rgba(255,255,255,0.08)";
 
+    <!-- Holdings -->
 
-      const ocrArea =
-        document.querySelector(
-          ".ocr-area"
-        );
+    <div class="section-title">
 
+      <div>
+        <span class="eyebrow">GUILD MEMBERS</span>
+        <h3>ギルドメンバー</h3>
+      </div>
 
-      if (ocrArea) {
+      <button id="show-all-btn" class="small-button">
+        全員を見る
+      </button>
 
-        ocrArea.appendChild(
-          resultEl
-        );
+    </div>
 
-      } else if (status) {
 
-        status.parentNode.appendChild(
-          resultEl
-        );
-      }
-    }
+    <div id="holdings-list" class="holdings-list">
+      <!-- JavaScript -->
+    </div>
 
 
-    resultEl.textContent =
-      "";
+    <!-- Candidate -->
 
+    <div class="candidate-card">
 
-    /*
-     * ----------------------------------------------------------
-     * Start OCR
-     * ----------------------------------------------------------
-     */
+      <span class="eyebrow">
+        RECRUITMENT
+      </span>
 
-    try {
+      <h3>新しい仲間候補</h3>
 
-      setText(
-        "ocr-status",
-        "OCR: loading Japanese language data..."
-      );
+      <p id="candidate-text">
+        現在のギルドには「攻撃力」の補強が有効です。
+      </p>
 
+      <button id="candidate-btn" class="outline-button">
+        買い候補を見る
+      </button>
 
-      /*
-       * Tesseract.js v2 syntax
-       *
-       * Japanese OCR
-       */
+    </div>
 
-      const result =
-        await Tesseract.recognize(
-          imageSrc,
-          "jpn+eng",
-          {
 
-            logger: function(message) {
+    <button id="back-start-btn" class="back-button">
+      ← ギルド画面を閉じる
+    </button>
 
-              try {
+  </section>
 
-                if (!status) {
-                  return;
-                }
 
+  <!-- =========================
+       HOLDING DETAIL
+  ========================== -->
 
-                /*
-                 * Progress percentage
-                 */
+  <section id="detail-screen" class="screen">
 
-                if (
-                  message &&
-                  typeof message.progress === "number"
-                ) {
+    <button id="detail-back-btn" class="back-top">
+      ← 戻る
+    </button>
 
-                  const percent =
-                    Math.round(
-                      message.progress * 100
-                    );
+    <div class="detail-hero">
 
+      <div class="character-large" id="detail-icon">
+        🛡️
+      </div>
 
-                  let currentStatus =
-                    message.status ||
-                    "processing";
+      <div>
 
+        <span class="eyebrow" id="detail-role">
+          DEFENSE
+        </span>
 
-                  /*
-                   * Make status human readable
-                   */
+        <h2 id="detail-name">
+          日本精工
+        </h2>
 
-                  if (
-                    currentStatus ===
-                    "loading tesseract core"
-                  ) {
+        <div id="detail-code">
+          6471
+        </div>
 
-                    currentStatus =
-                      "loading OCR engine";
+      </div>
 
-                  } else if (
-                    currentStatus ===
-                    "initializing tesseract"
-                  ) {
+    </div>
 
-                    currentStatus =
-                      "initializing";
 
-                  } else if (
-                    currentStatus ===
-                    "loading language traineddata"
-                  ) {
+    <div class="detail-score">
 
-                    currentStatus =
-                      "loading Japanese data";
+      <span>CHARACTER SCORE</span>
 
-                  } else if (
-                    currentStatus ===
-                    "recognizing text"
-                  ) {
+      <strong id="detail-score">
+        91
+      </strong>
 
-                    currentStatus =
-                      "recognizing text";
-                  }
+      <small>/100</small>
 
+    </div>
 
-                  status.textContent =
-                    `OCR: ${currentStatus} — ${percent}%`;
-                }
 
-              } catch (error) {
+    <div class="detail-grid">
 
-                console.warn(
-                  "PA-OS: OCR logger error",
-                  error
-                );
-              }
-            }
+      <div>
+        <span>安定性</span>
+        <strong id="detail-stability">90</strong>
+      </div>
 
-          }
-        );
+      <div>
+        <span>成長性</span>
+        <strong id="detail-growth">74</strong>
+      </div>
 
+      <div>
+        <span>配当</span>
+        <strong id="detail-dividend">82</strong>
+      </div>
 
-      /*
-       * --------------------------------------------------------
-       * Extract text
-       * --------------------------------------------------------
-       */
+      <div>
+        <span>割安度</span>
+        <strong id="detail-value">79</strong>
+      </div>
 
-      const text =
-        result &&
-        result.data &&
-        typeof result.data.text === "string"
-          ? result.data.text.trim()
-          : "";
+    </div>
 
 
-      /*
-       * --------------------------------------------------------
-       * Complete
-       * --------------------------------------------------------
-       */
+    <div class="detail-panel">
 
-      setText(
-        "ocr-status",
-        "OCR: complete"
-      );
+      <h3>⚔️ 強み</h3>
 
+      <p id="detail-strength">
+        安定性が高く、ポートフォリオの防御役として機能。
+      </p>
 
-      if (text) {
+    </div>
 
-        resultEl.textContent =
-          text;
 
-      } else {
+    <div class="detail-panel">
 
-        resultEl.textContent =
-          "(No text recognized)";
-      }
+      <h3>⚠️ 弱み</h3>
 
+      <p id="detail-weakness">
+        景気循環の影響を受ける可能性があります。
+      </p>
 
-      console.log(
-        "PA-OS: OCR completed."
-      );
+    </div>
 
 
-      console.log(
-        "PA-OS: OCR text:",
-        text
-      );
+    <div class="detail-panel advice">
 
+      <span class="eyebrow">
+        AI ADVICE
+      </span>
 
-    } catch (error) {
+      <h3 id="detail-advice-title">
+        継続保有
+      </h3>
 
-      console.error(
-        "PA-OS: OCR failed",
-        error
-      );
+      <p id="detail-advice">
+        現時点では急いで売買する必要はありません。
+      </p>
 
+    </div>
 
-      setText(
-        "ocr-status",
-        "OCR: failed. Check console for details."
-      );
+  </section>
 
 
-      resultEl.textContent =
-        "";
+  <!-- =========================
+       ALL MEMBERS
+  ========================== -->
 
+  <section id="members-screen" class="screen">
 
-    } finally {
+    <button id="members-back-btn" class="back-top">
+      ← 戻る
+    </button>
 
-      /*
-       * Re-enable button
-       */
+    <div class="page-title">
 
-      if (button) {
+      <span class="eyebrow">
+        FULL PARTY
+      </span>
 
-        button.disabled =
-          false;
+      <h2>ギルドメンバー全員</h2>
 
-        button.textContent =
-          "Run OCR";
-      }
-    }
-  }
+    </div>
 
+    <div id="all-members-list" class="all-members-list">
+      <!-- JavaScript -->
+    </div>
 
-  /*
-   * ============================================================
-   * Initialize
-   * ============================================================
-   */
+  </section>
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+</div>
 
-      console.log(
-        "PA-OS: initializing..."
-      );
 
+<script src="script.js"></script>
 
-      /*
-       * --------------------------------------------------------
-       * DOM elements
-       * --------------------------------------------------------
-       */
-
-      const input =
-        $("portfolio-input");
-
-
-      const chooseButton =
-        $("choose-photo-btn");
-
-
-      const modalSelectButton =
-        $("modal-select-photo");
-
-
-      const openImportButton =
-        $("open-import");
-
-
-      const closeModalButton =
-        $("modal-close");
-
-
-      const openLedgerButton =
-        $("open-ledger");
-
-
-      const closeLedgerButton =
-        $("close-ledger");
-
-
-      const ocrButton =
-        $("ocr-btn");
-
-
-      /*
-       * --------------------------------------------------------
-       * File Input
-       * --------------------------------------------------------
-       */
-
-      if (!input) {
-
-        console.error(
-          "PA-OS ERROR: #portfolio-input not found."
-        );
-
-      } else {
-
-        console.log(
-          "PA-OS: #portfolio-input found."
-        );
-
-
-        /*
-         * Ensure image selection
-         */
-
-        input.setAttribute(
-          "accept",
-          "image/*"
-        );
-
-
-        /*
-         * SINGLE CHANGE HANDLER
-         */
-
-        input.addEventListener(
-          "change",
-          async (event) => {
-
-            console.log(
-              "PA-OS: portfolio-input change fired."
-            );
-
-
-            const file =
-              event.target.files &&
-              event.target.files[0];
-
-
-            if (!file) {
-
-              console.log(
-                "PA-OS: no file selected."
-              );
-
-              return;
-            }
-
-
-            console.log(
-              "PA-OS: selected file:",
-              file.name,
-              file.type,
-              file.size
-            );
-
-
-            /*
-             * Process image
-             */
-
-            await handleFileInput(
-              file
-            );
-
-
-            /*
-             * Clear input.
-             *
-             * This is important because
-             * iPhone Safari otherwise may not
-             * fire change when the same image
-             * is selected again.
-             */
-
-            try {
-
-              event.target.value =
-                "";
-
-            } catch (error) {
-
-              console.warn(
-                "PA-OS: could not clear file input.",
-                error
-              );
-            }
-
-          },
-          false
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * MAIN PHOTO BUTTON
-       * --------------------------------------------------------
-       */
-
-      if (chooseButton) {
-
-        chooseButton.addEventListener(
-          "click",
-          (event) => {
-
-            event.preventDefault();
-
-
-            console.log(
-              "PA-OS: Choose or Take Photo clicked."
-            );
-
-
-            if (!input) {
-
-              console.error(
-                "PA-OS: #portfolio-input missing."
-              );
-
-              return;
-            }
-
-
-            /*
-             * Direct user gesture.
-             *
-             * Important for iPhone Safari.
-             */
-
-            try {
-
-              input.click();
-
-            } catch (error) {
-
-              console.error(
-                "PA-OS: input.click() failed.",
-                error
-              );
-            }
-
-          },
-          false
-        );
-
-      } else {
-
-        console.error(
-          "PA-OS ERROR: #choose-photo-btn not found."
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * MODAL PHOTO BUTTON
-       * --------------------------------------------------------
-       */
-
-      if (modalSelectButton) {
-
-        modalSelectButton.addEventListener(
-          "click",
-          (event) => {
-
-            event.preventDefault();
-
-
-            console.log(
-              "PA-OS: modal Select Screenshot clicked."
-            );
-
-
-            if (!input) {
-
-              console.error(
-                "PA-OS: #portfolio-input missing."
-              );
-
-              return;
-            }
-
-
-            try {
-
-              input.click();
-
-            } catch (error) {
-
-              console.error(
-                "PA-OS: modal input.click() failed.",
-                error
-              );
-            }
-
-          },
-          false
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * IMPORT MODAL OPEN
-       * --------------------------------------------------------
-       */
-
-      if (openImportButton) {
-
-        openImportButton.addEventListener(
-          "click",
-          () => {
-
-            openImportModal();
-
-          }
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * IMPORT MODAL CLOSE
-       * --------------------------------------------------------
-       */
-
-      if (closeModalButton) {
-
-        closeModalButton.addEventListener(
-          "click",
-          () => {
-
-            closeImportModal();
-
-          }
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * LEDGER OPEN
-       * --------------------------------------------------------
-       */
-
-      if (openLedgerButton) {
-
-        openLedgerButton.addEventListener(
-          "click",
-          () => {
-
-            openLedger();
-
-          }
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * LEDGER CLOSE
-       * --------------------------------------------------------
-       */
-
-      if (closeLedgerButton) {
-
-        closeLedgerButton.addEventListener(
-          "click",
-          () => {
-
-            closeLedger();
-
-          }
-        );
-      }
-
-
-      /*
-       * ========================================================
-       * OCR BUTTON
-       * ========================================================
-       *
-       * IMPORTANT:
-       * There is exactly ONE OCR click handler.
-       *
-       * No placeholder handler.
-       * No duplicate handler.
-       * ========================================================
-       */
-
-      if (ocrButton) {
-
-        ocrButton.textContent =
-          "Run OCR";
-
-
-        ocrButton.addEventListener(
-          "click",
-          () => {
-
-            runOCR();
-
-          },
-          false
-        );
-
-
-        console.log(
-          "PA-OS: OCR button connected."
-        );
-
-      } else {
-
-        console.error(
-          "PA-OS ERROR: #ocr-btn not found."
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * Load saved screenshot
-       * --------------------------------------------------------
-       */
-
-      const savedImage =
-        loadSavedPortfolioImage();
-
-
-      if (savedImage) {
-
-        console.log(
-          "PA-OS: saved portfolio image found."
-        );
-
-
-        showPreviewFromDataURL(
-          savedImage
-        );
-
-
-        setText(
-          "import-status",
-          "Saved image loaded. Ready for OCR."
-        );
-
-      } else {
-
-        console.log(
-          "PA-OS: no saved portfolio image."
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * Initial modal
-       * --------------------------------------------------------
-       */
-
-      if (!savedImage) {
-
-        setTimeout(
-          () => {
-
-            openImportModal();
-
-          },
-          150
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * Initial ledger
-       * --------------------------------------------------------
-       */
-
-      renderLedger();
-
-
-      /*
-       * --------------------------------------------------------
-       * Finished
-       * --------------------------------------------------------
-       */
-
-      console.log(
-        "PA-OS: initialization complete."
-      );
-
-    }
-  );
-
-})();
+</body>
+</html>
