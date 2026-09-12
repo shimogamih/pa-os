@@ -1,509 +1,554 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+"use strict";
 
-  <title>PA-OS | Portfolio AI Guild</title>
+/*
+============================================================
+PA-OS
+Portfolio AI Guild
+Prototype
+============================================================
+*/
 
-  <link rel="stylesheet" href="style.css">
-</head>
+/* =========================
+   SAMPLE PORTFOLIO DATA
 
-<body>
+   後からここを
+   実際のポートフォリオデータ、
+   株価API、
+   OCRデータに接続する。
+========================= */
 
-<div id="app">
+const portfolio = [
 
-  <!-- =========================
-       HEADER
-  ========================== -->
+  {
+    name: "日本精工",
+    code: "6471",
+    role: "DEFENSE",
+    roleJa: "防御",
+    icon: "🛡️",
+    score: 91,
+    stability: 90,
+    growth: 74,
+    dividend: 82,
+    value: 79,
+    strength: "安定性が高く、ポートフォリオの防御役として機能。",
+    weakness: "景気循環の影響を受ける可能性があります。",
+    adviceTitle: "継続保有",
+    advice: "現時点では急いで売買する必要はありません。"
+  },
 
-  <header class="topbar">
+  {
+    name: "四国電力",
+    code: "9507",
+    role: "DEFENSE",
+    roleJa: "防御",
+    icon: "🏰",
+    score: 86,
+    stability: 88,
+    growth: 62,
+    dividend: 84,
+    value: 81,
+    strength: "ディフェンシブ性と配当面が魅力。",
+    weakness: "金利や燃料価格など外部要因に注意。",
+    adviceTitle: "継続保有",
+    advice: "防御役としてポートフォリオに有効です。"
+  },
 
-    <div>
-      <div class="logo">PA-OS</div>
-      <div class="subtitle">PORTFOLIO AI GUILD</div>
-    </div>
+  {
+    name: "ケーズホールディングス",
+    code: "8282",
+    role: "SUPPORT",
+    roleJa: "支援",
+    icon: "📖",
+    score: 84,
+    stability: 82,
+    growth: 68,
+    dividend: 88,
+    value: 76,
+    strength: "配当と安定性による継続戦力。",
+    weakness: "小売環境の変化に注意。",
+    adviceTitle: "押し目待ち",
+    advice: "急いで追いかけず、価格位置を見ながら判断。"
+  },
 
-    <div class="market-badge">
-      <span class="status-dot"></span>
-      <span id="market-status">MARKET READY</span>
-    </div>
+  {
+    name: "アドソル日進",
+    code: "3837",
+    role: "MAGIC",
+    roleJa: "魔法",
+    icon: "🔮",
+    score: 78,
+    stability: 71,
+    growth: 84,
+    dividend: 65,
+    value: 69,
+    strength: "成長性がポートフォリオの攻撃力を補います。",
+    weakness: "成長期待が剥落した場合の値動きに注意。",
+    adviceTitle: "様子見",
+    advice: "成長力は魅力ですが、価格位置を確認。"
+  },
 
-  </header>
+  {
+    name: "三谷産業",
+    code: "8285",
+    role: "SUPPORT",
+    roleJa: "支援",
+    icon: "🏮",
+    score: 76,
+    stability: 79,
+    growth: 65,
+    dividend: 72,
+    value: 81,
+    strength: "割安性と分散効果。",
+    weakness: "大きな成長材料が必要。",
+    adviceTitle: "継続保有",
+    advice: "ギルドの補助役として機能。"
+  },
+
+  {
+    name: "ヨドコウ",
+    code: "5451",
+    role: "ATTACK",
+    roleJa: "攻撃",
+    icon: "🏹",
+    score: 73,
+    stability: 69,
+    growth: 73,
+    dividend: 76,
+    value: 72,
+    strength: "景気回復局面での上昇余地。",
+    weakness: "景気敏感性が高め。",
+    adviceTitle: "押し目待ち",
+    advice: "価格が下がった局面で再評価。"
+  },
+
+  {
+    name: "メンタルヘルステクノロジーズ",
+    code: "9218",
+    role: "MAGIC",
+    roleJa: "魔法",
+    icon: "✨",
+    score: 69,
+    stability: 57,
+    growth: 82,
+    dividend: 42,
+    value: 64,
+    strength: "成長性が高く、将来戦力候補。",
+    weakness: "安定性が低く値動きが大きい。",
+    adviceTitle: "様子見",
+    advice: "成長枠として保有状況を確認。"
+  },
+
+  {
+    name: "Polaris Holdings",
+    code: "3010",
+    role: "ATTACK",
+    roleJa: "攻撃",
+    icon: "⚔️",
+    score: 67,
+    stability: 55,
+    growth: 76,
+    dividend: 38,
+    value: 71,
+    strength: "景気回復時の上昇余地。",
+    weakness: "変動が大きい。",
+    adviceTitle: "慎重",
+    advice: "リスク管理を優先。"
+  },
+
+  {
+    name: "S ゴールド ETF",
+    code: "314A",
+    role: "SPECIAL",
+    roleJa: "特殊",
+    icon: "💰",
+    score: 88,
+    stability: 91,
+    growth: 55,
+    dividend: 0,
+    value: 83,
+    strength: "株式市場と異なる値動きによる分散効果。",
+    weakness: "インカム目的には向きません。",
+    adviceTitle: "継続",
+    advice: "リスク分散役として有効。"
+  }
+
+];
 
 
-  <!-- =========================
-       START SCREEN
-  ========================== -->
+/* =========================
+   DOM
+========================= */
 
-  <section id="start-screen" class="screen active">
+const startScreen =
+  document.getElementById("start-screen");
 
-    <div class="hero">
+const dashboardScreen =
+  document.getElementById("dashboard-screen");
 
-      <div class="hero-emblem">
-        ⚔️
-      </div>
+const detailScreen =
+  document.getElementById("detail-screen");
 
-      <div class="eyebrow">
-        PORTFOLIO ADVENTURE OS
-      </div>
-
-      <h1>
-        あなたの資産を<br>
-        <span>最強のギルド</span>へ
-      </h1>
-
-      <p>
-        保有銘柄を仲間として分析し、<br>
-        ポートフォリオ全体の戦力を判定します。
-      </p>
-
-      <button id="launch-btn" class="main-button">
-        <span>⚔</span>
-        ポートフォリオAI起動
-      </button>
-
-    </div>
+const membersScreen =
+  document.getElementById("members-screen");
 
 
-    <div class="sample-status">
+/* =========================
+   SCREEN SWITCH
+========================= */
 
-      <div>
-        <span>GUILD</span>
-        <strong>未編成</strong>
-      </div>
+function showScreen(screen) {
 
-      <div>
-        <span>RANK</span>
-        <strong>---</strong>
-      </div>
+  document
+    .querySelectorAll(".screen")
+    .forEach(item => {
 
-      <div>
-        <span>SCORE</span>
-        <strong>---</strong>
-      </div>
+      item.classList.remove("active");
 
-    </div>
+    });
 
-  </section>
+  screen.classList.add("active");
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
 
 
-  <!-- =========================
-       DASHBOARD
-  ========================== -->
+/* =========================
+   RENDER PARTY
+========================= */
 
-  <section id="dashboard-screen" class="screen">
+function renderParty() {
 
-    <!-- Guild Header -->
+  const party =
+    document.getElementById("party");
 
-    <div class="guild-header">
+  if (!party) return;
 
-      <div>
+  party.innerHTML = "";
 
-        <div class="eyebrow">
-          PORTFOLIO GUILD
+  portfolio
+    .slice(0, 6)
+    .forEach((member, index) => {
+
+      const card =
+        document.createElement("div");
+
+      card.className =
+        "member-card";
+
+      card.innerHTML = `
+
+        <div class="member-score">
+          ${member.score}
         </div>
 
-        <h2 id="guild-name">
-          暁の資産騎士団
-        </h2>
-
-        <div class="guild-class" id="guild-class">
-          バランス型ギルド
+        <div class="member-icon">
+          ${member.icon}
         </div>
 
+        <div class="member-role">
+          ${member.role}
+        </div>
+
+        <div class="member-name">
+          ${member.name}
+        </div>
+
+      `;
+
+      card.addEventListener(
+        "click",
+        () => openDetail(member)
+      );
+
+      party.appendChild(card);
+
+    });
+}
+
+
+/* =========================
+   RENDER HOLDINGS
+========================= */
+
+function renderHoldings() {
+
+  const list =
+    document.getElementById("holdings-list");
+
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  portfolio.forEach(member => {
+
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "holding-row";
+
+    row.innerHTML = `
+
+      <div class="holding-icon">
+        ${member.icon}
       </div>
 
-      <div class="guild-rank">
+      <div class="holding-info">
 
-        <span>GUILD RANK</span>
-
-        <strong id="guild-rank">
-          A
+        <strong>
+          ${member.name}
         </strong>
 
-      </div>
-
-    </div>
-
-
-    <!-- Overall Score -->
-
-    <div class="score-card">
-
-      <div>
-
-        <span class="card-label">
-          PORTFOLIO POWER
+        <span>
+          ${member.code} · ${member.roleJa}
         </span>
 
-        <div class="score-number">
-          <strong id="overall-score">82</strong>
-          <span>/100</span>
-        </div>
-
       </div>
 
-      <div class="score-description">
+      <div class="holding-score">
+        ${member.score}
+      </div>
 
-        <strong id="score-title">
-          安定した強力なパーティ
+    `;
+
+    row.addEventListener(
+      "click",
+      () => openDetail(member)
+    );
+
+    list.appendChild(row);
+
+  });
+}
+
+
+/* =========================
+   RENDER ALL MEMBERS
+========================= */
+
+function renderAllMembers() {
+
+  const list =
+    document.getElementById(
+      "all-members-list"
+    );
+
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  portfolio.forEach(member => {
+
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "holding-row";
+
+    row.innerHTML = `
+
+      <div class="holding-icon">
+        ${member.icon}
+      </div>
+
+      <div class="holding-info">
+
+        <strong>
+          ${member.name}
         </strong>
 
-        <p id="score-description">
-          防御力と継続戦力に優れています。
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <!-- Today's Formation -->
-
-    <div class="section-title">
-
-      <div>
-        <span class="eyebrow">TODAY'S FORMATION</span>
-        <h3>今日の陣形</h3>
-      </div>
-
-      <span class="formation-name">
-        鉄壁の布陣
-      </span>
-
-    </div>
-
-
-    <div id="party" class="party-grid">
-      <!-- JavaScript -->
-    </div>
-
-
-    <!-- MVP -->
-
-    <div class="mvp-card">
-
-      <div class="mvp-icon">
-        👑
-      </div>
-
-      <div>
-
-        <span class="eyebrow">
-          TODAY'S MVP
+        <span>
+          ${member.code} · ${member.roleJa}
         </span>
 
-        <h3 id="mvp-name">
-          日本精工
-        </h3>
-
-        <p id="mvp-text">
-          ギルドの防御力と安定性に大きく貢献。
-        </p>
-
       </div>
 
-      <div class="mvp-score">
-        <strong id="mvp-score">91</strong>
-        <span>PTS</span>
+      <div class="holding-score">
+        ${member.score}
       </div>
 
-    </div>
+    `;
 
+    row.addEventListener(
+      "click",
+      () => openDetail(member)
+    );
 
-    <!-- Risk -->
+    list.appendChild(row);
 
-    <div class="section-title">
+  });
+}
 
-      <div>
-        <span class="eyebrow">RISK ANALYSIS</span>
-        <h3>リスク分析</h3>
-      </div>
 
-    </div>
+/* =========================
+   DETAIL
+========================= */
 
+function openDetail(member) {
 
-    <div class="risk-card">
+  document.getElementById(
+    "detail-icon"
+  ).textContent = member.icon;
 
-      <div class="risk-row">
+  document.getElementById(
+    "detail-role"
+  ).textContent = member.role;
 
-        <div class="risk-name">
-          <span>Market Risk</span>
-          <strong id="market-risk-value">42</strong>
-        </div>
+  document.getElementById(
+    "detail-name"
+  ).textContent = member.name;
 
-        <div class="risk-bar">
-          <div id="market-risk-bar" style="width:42%"></div>
-        </div>
+  document.getElementById(
+    "detail-code"
+  ).textContent = member.code;
 
-      </div>
+  document.getElementById(
+    "detail-score"
+  ).textContent = member.score;
 
+  document.getElementById(
+    "detail-stability"
+  ).textContent = member.stability;
 
-      <div class="risk-row">
+  document.getElementById(
+    "detail-growth"
+  ).textContent = member.growth;
 
-        <div class="risk-name">
-          <span>Sector Risk</span>
-          <strong id="sector-risk-value">35</strong>
-        </div>
+  document.getElementById(
+    "detail-dividend"
+  ).textContent = member.dividend;
 
-        <div class="risk-bar">
-          <div id="sector-risk-bar" style="width:35%"></div>
-        </div>
+  document.getElementById(
+    "detail-value"
+  ).textContent = member.value;
 
-      </div>
+  document.getElementById(
+    "detail-strength"
+  ).textContent = member.strength;
 
+  document.getElementById(
+    "detail-weakness"
+  ).textContent = member.weakness;
 
-      <div class="risk-row">
+  document.getElementById(
+    "detail-advice-title"
+  ).textContent = member.adviceTitle;
 
-        <div class="risk-name">
-          <span>Concentration</span>
-          <strong id="concentration-risk-value">28</strong>
-        </div>
+  document.getElementById(
+    "detail-advice"
+  ).textContent = member.advice;
 
-        <div class="risk-bar">
-          <div id="concentration-risk-bar" style="width:28%"></div>
-        </div>
+  showScreen(detailScreen);
+}
 
-      </div>
 
-    </div>
+/* =========================
+   BUTTONS
+========================= */
 
+document
+  .getElementById("launch-btn")
+  .addEventListener(
+    "click",
+    () => {
 
-    <!-- Strategy -->
+      renderParty();
+      renderHoldings();
 
-    <div class="section-title">
+      showScreen(
+        dashboardScreen
+      );
 
-      <div>
-        <span class="eyebrow">TODAY'S STRATEGY</span>
-        <h3>今日の作戦</h3>
-      </div>
+    }
+  );
 
-    </div>
 
+document
+  .getElementById("show-all-btn")
+  .addEventListener(
+    "click",
+    () => {
 
-    <div class="strategy-grid">
+      renderAllMembers();
 
-      <div class="strategy-card continue">
-        <span>📈</span>
-        <strong>積立継続</strong>
-        <small>GOOD</small>
-      </div>
+      showScreen(
+        membersScreen
+      );
 
-      <div class="strategy-card wait">
-        <span>⏳</span>
-        <strong>押し目待ち</strong>
-        <small>WATCH</small>
-      </div>
+    }
+  );
 
-      <div class="strategy-card buy">
-        <span>⚔️</span>
-        <strong>買い候補</strong>
-        <small>READY</small>
-      </div>
 
-      <div class="strategy-card sell">
-        <span>💰</span>
-        <strong>利益確定</strong>
-        <small>CHECK</small>
-      </div>
+document
+  .getElementById("candidate-btn")
+  .addEventListener(
+    "click",
+    () => {
 
-    </div>
+      alert(
+        "買い候補機能は、実際の株価データ接続後に自動判定します。"
+      );
 
+    }
+  );
 
-    <!-- Holdings -->
 
-    <div class="section-title">
+document
+  .getElementById("back-start-btn")
+  .addEventListener(
+    "click",
+    () => {
 
-      <div>
-        <span class="eyebrow">GUILD MEMBERS</span>
-        <h3>ギルドメンバー</h3>
-      </div>
+      showScreen(
+        startScreen
+      );
 
-      <button id="show-all-btn" class="small-button">
-        全員を見る
-      </button>
+    }
+  );
 
-    </div>
 
+document
+  .getElementById("detail-back-btn")
+  .addEventListener(
+    "click",
+    () => {
 
-    <div id="holdings-list" class="holdings-list">
-      <!-- JavaScript -->
-    </div>
+      showScreen(
+        dashboardScreen
+      );
 
+    }
+  );
 
-    <!-- Candidate -->
 
-    <div class="candidate-card">
+document
+  .getElementById("members-back-btn")
+  .addEventListener(
+    "click",
+    () => {
 
-      <span class="eyebrow">
-        RECRUITMENT
-      </span>
+      showScreen(
+        dashboardScreen
+      );
 
-      <h3>新しい仲間候補</h3>
+    }
+  );
 
-      <p id="candidate-text">
-        現在のギルドには「攻撃力」の補強が有効です。
-      </p>
 
-      <button id="candidate-btn" class="outline-button">
-        買い候補を見る
-      </button>
+/* =========================
+   INITIALIZE
+========================= */
 
-    </div>
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
 
+    console.log(
+      "PA-OS initialized."
+    );
 
-    <button id="back-start-btn" class="back-button">
-      ← ギルド画面を閉じる
-    </button>
-
-  </section>
-
-
-  <!-- =========================
-       HOLDING DETAIL
-  ========================== -->
-
-  <section id="detail-screen" class="screen">
-
-    <button id="detail-back-btn" class="back-top">
-      ← 戻る
-    </button>
-
-    <div class="detail-hero">
-
-      <div class="character-large" id="detail-icon">
-        🛡️
-      </div>
-
-      <div>
-
-        <span class="eyebrow" id="detail-role">
-          DEFENSE
-        </span>
-
-        <h2 id="detail-name">
-          日本精工
-        </h2>
-
-        <div id="detail-code">
-          6471
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="detail-score">
-
-      <span>CHARACTER SCORE</span>
-
-      <strong id="detail-score">
-        91
-      </strong>
-
-      <small>/100</small>
-
-    </div>
-
-
-    <div class="detail-grid">
-
-      <div>
-        <span>安定性</span>
-        <strong id="detail-stability">90</strong>
-      </div>
-
-      <div>
-        <span>成長性</span>
-        <strong id="detail-growth">74</strong>
-      </div>
-
-      <div>
-        <span>配当</span>
-        <strong id="detail-dividend">82</strong>
-      </div>
-
-      <div>
-        <span>割安度</span>
-        <strong id="detail-value">79</strong>
-      </div>
-
-    </div>
-
-
-    <div class="detail-panel">
-
-      <h3>⚔️ 強み</h3>
-
-      <p id="detail-strength">
-        安定性が高く、ポートフォリオの防御役として機能。
-      </p>
-
-    </div>
-
-
-    <div class="detail-panel">
-
-      <h3>⚠️ 弱み</h3>
-
-      <p id="detail-weakness">
-        景気循環の影響を受ける可能性があります。
-      </p>
-
-    </div>
-
-
-    <div class="detail-panel advice">
-
-      <span class="eyebrow">
-        AI ADVICE
-      </span>
-
-      <h3 id="detail-advice-title">
-        継続保有
-      </h3>
-
-      <p id="detail-advice">
-        現時点では急いで売買する必要はありません。
-      </p>
-
-    </div>
-
-  </section>
-
-
-  <!-- =========================
-       ALL MEMBERS
-  ========================== -->
-
-  <section id="members-screen" class="screen">
-
-    <button id="members-back-btn" class="back-top">
-      ← 戻る
-    </button>
-
-    <div class="page-title">
-
-      <span class="eyebrow">
-        FULL PARTY
-      </span>
-
-      <h2>ギルドメンバー全員</h2>
-
-    </div>
-
-    <div id="all-members-list" class="all-members-list">
-      <!-- JavaScript -->
-    </div>
-
-  </section>
-
-</div>
-
-
-<script src="script.js"></script>
-
-</body>
-</html>
+  }
+);
