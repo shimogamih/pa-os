@@ -2,547 +2,57 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
-
-  <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
-  >
-
-  <meta name="theme-color" content="#080b12">
-
-  <title>PA-OS — Portfolio AI OS</title>
+  <title>PA-OS</title>
 
   <link rel="stylesheet" href="style.css">
 
-  <!-- Tesseract.js -->
   <script
-    src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js"
-    defer
-  ></script>
+    src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.5/dist/tesseract.min.js">
+  </script>
 </head>
 
 <body>
 
 <div id="app" class="app">
 
-  <!-- ==================================================
-       TOP BAR
-  =================================================== -->
-
   <header class="topbar">
-
-    <h1 class="title">
-      PA-OS
-    </h1>
+    <h1 class="title">PA-OS</h1>
 
     <nav class="meta">
-
-      <button
-        id="open-import"
-        class="btn"
-        type="button"
-      >
+      <button id="open-import" class="btn" type="button">
         Import Portfolio
       </button>
 
-      <button
-        id="open-ledger"
-        class="btn"
-        type="button"
-      >
+      <button id="open-ledger" class="btn" type="button">
         Portfolio Ledger
       </button>
-
     </nav>
-
   </header>
 
 
-  <!-- ==================================================
-       MAIN CONTENT
-  =================================================== -->
-
   <main class="container">
-
-
-    <!-- ==================================================
-         LEFT PANEL
-    =================================================== -->
 
     <section class="left-panel">
 
-
-      <!-- ==========================
-           GUILD MASTER
-      =========================== -->
-
       <div class="card guild-master">
+        <h2>Guild Master</h2>
 
-        <h2>
-          Guild Master
-        </h2>
-
-        <div
-          id="guild-master-avatar"
-          class="avatar-placeholder"
-        >
+        <div id="guild-master-avatar" class="avatar-placeholder">
           GM
         </div>
 
         <p class="muted">
           Leader of the guild. Tracks overall progress.
         </p>
-
       </div>
 
-
-      <!-- ==========================
-           GUILD MEMBERS
-      =========================== -->
 
       <div class="card guild-members">
-
-        <h2>
-          Guild Members
-        </h2>
-
-        <ul
-          id="members-list"
-          class="members-list"
-        >
-
-          <li>
-            Member A
-          </li>
-
-          <li>
-            Member B
-          </li>
-
-          <li>
-            Member C
-          </li>
-
-        </ul>
-
-      </div>
-
-
-      <!-- ==========================
-           BOSS
-      =========================== -->
-
-      <div class="card boss">
-
-        <h2>
-          Boss
-        </h2>
-
-        <p class="muted">
-          The looming market boss. Prepare your strategy.
-        </p>
-
-      </div>
-
-    </section>
-
-
-    <!-- ==================================================
-         RIGHT PANEL
-    =================================================== -->
-
-    <section class="right-panel">
-
-
-      <!-- ==================================================
-           DASHBOARD
-      =================================================== -->
-
-      <div class="cards-grid">
-
-
-        <!-- Portfolio Value -->
-
-        <div class="card dashboard-card">
-
-          <h3>
-            Portfolio Value
-          </h3>
-
-          <p
-            class="large"
-            id="portfolio-value"
-          >
-            —
-          </p>
-
-        </div>
-
-
-        <!-- Daily Change -->
-
-        <div class="card dashboard-card">
-
-          <h3>
-            Daily Change
-          </h3>
-
-          <p
-            class="large"
-            id="daily-change"
-          >
-            —
-          </p>
-
-        </div>
-
-
-        <!-- Open P&L -->
-
-        <div class="card dashboard-card">
-
-          <h3>
-            Open P&amp;L
-          </h3>
-
-          <p
-            class="large"
-            id="open-pl"
-          >
-            —
-          </p>
-
-        </div>
-
-
-        <!-- Cash -->
-
-        <div class="card dashboard-card">
-
-          <h3>
-            Cash
-          </h3>
-
-          <p
-            class="large"
-            id="cash"
-          >
-            —
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <!-- ==================================================
-           PORTFOLIO SCREENSHOT
-      =================================================== -->
-
-      <div class="card upload-card">
-
-
-        <h2>
-          Portfolio Screenshot
-        </h2>
-
-
-        <p class="muted">
-          Upload a screenshot to import your portfolio.
-          Works on iPhone.
-        </p>
-
-
-        <!-- ==================================================
-             SINGLE FILE INPUT
-
-             IMPORTANT:
-             There must be ONLY ONE element with this ID.
-             JavaScript opens it from the buttons below.
-        =================================================== -->
-
-
-<input
-  id="portfolio-input"
-  type="file"
-  accept="image/*"
-  style="
-    position:absolute;
-    width:1px;
-    height:1px;
-    opacity:0;
-  "
->
-
-<label
-  for="portfolio-input"
-  class="file-btn"
->
-  Choose or Take Photo
-</label>
-
-
-        <!-- ==================================================
-             IMAGE PREVIEW
-        =================================================== -->
-
-        <div
-          id="preview"
-          class="preview"
-          aria-live="polite"
-        ></div>
-
-
-        <!-- ==================================================
-             IMPORT STATUS
-        =================================================== -->
-
-        <div
-          id="import-status"
-          class="import-status"
-          aria-live="polite"
-        ></div>
-
-
-        <!-- ==================================================
-             OCR AREA
-        =================================================== -->
-
-        <div class="ocr-area">
-
-
-          <button
-            id="ocr-btn"
-            class="btn"
-            type="button"
-          >
-            Run OCR
-          </button>
-
-
-          <div
-            id="ocr-status"
-            class="muted small"
-            aria-live="polite"
-          >
-            OCR: ready
-          </div>
-
-
-          <!--
-            OCR結果表示エリア
-            script.js が認識結果をここへ入れます。
-          -->
-
-          <pre
-            id="ocr-result"
-            class="ocr-result"
-            aria-live="polite"
-          ></pre>
-
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <!-- ==================================================
-       FOOTER
-  =================================================== -->
-
-  <footer class="footer muted">
-
-    <small>
-      PA-OS — Portfolio AI OS
-    </small>
-
-  </footer>
-
-</div>
-
-
-<!-- ==================================================
-     IMPORT MODAL
-=================================================== -->
-
-<div
-  id="import-modal"
-  class="modal"
-  role="dialog"
-  aria-modal="true"
-  aria-hidden="true"
->
-
-  <div class="modal-sheet">
-
-
-    <h2>
-      Import Portfolio
-    </h2>
-
-
-    <p class="muted">
-      To get started, import a portfolio screenshot.
-      We'll save it locally on your device.
-    </p>
-
-
-    <!--
-      同じ #portfolio-input を使用。
-      input はここでは作らない。
-    -->
-
-    <button
-      id="modal-select-photo"
-      class="file-btn"
-      type="button"
-    >
-      Select Screenshot
-    </button>
-
-
-    <div
-      id="modal-status"
-      class="import-status"
-      aria-live="polite"
-    ></div>
-
-
-    <button
-      id="modal-close"
-      class="btn secondary"
-      type="button"
-    >
-      Later
-    </button>
-
-  </div>
-
-</div>
-
-
-<!-- ==================================================
-     PORTFOLIO LEDGER
-=================================================== -->
-
-<div
-  id="ledger-screen"
-  class="ledger-screen"
-  aria-hidden="true"
->
-
-  <div class="ledger-sheet">
-
-
-    <!-- Ledger Header -->
-
-    <div class="ledger-header">
-
-      <h2>
-        Portfolio Ledger
-      </h2>
-
-      <button
-        id="close-ledger"
-        class="btn secondary"
-        type="button"
-      >
-        Back
-      </button>
-
-    </div>
-
-
-    <!-- Ledger Summary -->
-
-    <div class="ledger-summary">
-
-
-      <!-- Total Assets -->
-
-      <div class="summary-item">
-
-        <div class="muted">
-          Total Assets
-        </div>
-
-        <div
-          id="total-assets"
-          class="large"
-        >
-          —
-        </div>
-
-      </div>
-
-
-      <!-- Total Profit -->
-
-      <div class="summary-item">
-
-        <div class="muted">
-          Total Profit/Loss
-        </div>
-
-        <div
-          id="total-profit"
-          class="large"
-        >
-          —
-        </div>
-
-      </div>
-
-
-      <!-- Number of Holdings -->
-
-      <div class="summary-item">
-
-        <div class="muted">
-          Number of Holdings
-        </div>
-
-        <div
-          id="num-holdings"
-          class="large"
-        >
-          0
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <!-- Ledger Cards -->
-
-    <div
-      id="ledger-cards"
-      class="ledger-cards"
-    ></div>
-
-  </div>
-
-</div>
-
-
-<!-- ==================================================
-     MAIN JAVASCRIPT
-=================================================== -->
-
-<script
-  src="script.js?v=2"
-  defer
-></script>
-
-</body>
-</html>
+        <h2>Guild Members</h2>
+
+        <ul id="members-list" class="members-list">
+          <li>Member A</li>
+          <li>Member B</li>
+          <li>Member
