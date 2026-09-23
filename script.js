@@ -1,554 +1,1114 @@
-"use strict";
+(() => {
+  "use strict";
 
-/*
-============================================================
-PA-OS
-Portfolio AI Guild
-Prototype
-============================================================
-*/
+  /*
+   * ============================================================
+   * PA-OS
+   * Portfolio Screenshot / Preview / OCR
+   * ============================================================
+   */
 
-/* =========================
-   SAMPLE PORTFOLIO DATA
+  const SCREENSHOT_KEY = "portfolio_image";
 
-   後からここを
-   実際のポートフォリオデータ、
-   株価API、
-   OCRデータに接続する。
-========================= */
+  const $ = (id) => document.getElementById(id);
 
-const portfolio = [
 
-  {
-    name: "日本精工",
-    code: "6471",
-    role: "DEFENSE",
-    roleJa: "防御",
-    icon: "🛡️",
-    score: 91,
-    stability: 90,
-    growth: 74,
-    dividend: 82,
-    value: 79,
-    strength: "安定性が高く、ポートフォリオの防御役として機能。",
-    weakness: "景気循環の影響を受ける可能性があります。",
-    adviceTitle: "継続保有",
-    advice: "現時点では急いで売買する必要はありません。"
-  },
+  /*
+   * ============================================================
+   * TEXT
+   * ============================================================
+   */
 
-  {
-    name: "四国電力",
-    code: "9507",
-    role: "DEFENSE",
-    roleJa: "防御",
-    icon: "🏰",
-    score: 86,
-    stability: 88,
-    growth: 62,
-    dividend: 84,
-    value: 81,
-    strength: "ディフェンシブ性と配当面が魅力。",
-    weakness: "金利や燃料価格など外部要因に注意。",
-    adviceTitle: "継続保有",
-    advice: "防御役としてポートフォリオに有効です。"
-  },
+  function setText(id, text) {
+    const el = $(id);
 
-  {
-    name: "ケーズホールディングス",
-    code: "8282",
-    role: "SUPPORT",
-    roleJa: "支援",
-    icon: "📖",
-    score: 84,
-    stability: 82,
-    growth: 68,
-    dividend: 88,
-    value: 76,
-    strength: "配当と安定性による継続戦力。",
-    weakness: "小売環境の変化に注意。",
-    adviceTitle: "押し目待ち",
-    advice: "急いで追いかけず、価格位置を見ながら判断。"
-  },
-
-  {
-    name: "アドソル日進",
-    code: "3837",
-    role: "MAGIC",
-    roleJa: "魔法",
-    icon: "🔮",
-    score: 78,
-    stability: 71,
-    growth: 84,
-    dividend: 65,
-    value: 69,
-    strength: "成長性がポートフォリオの攻撃力を補います。",
-    weakness: "成長期待が剥落した場合の値動きに注意。",
-    adviceTitle: "様子見",
-    advice: "成長力は魅力ですが、価格位置を確認。"
-  },
-
-  {
-    name: "三谷産業",
-    code: "8285",
-    role: "SUPPORT",
-    roleJa: "支援",
-    icon: "🏮",
-    score: 76,
-    stability: 79,
-    growth: 65,
-    dividend: 72,
-    value: 81,
-    strength: "割安性と分散効果。",
-    weakness: "大きな成長材料が必要。",
-    adviceTitle: "継続保有",
-    advice: "ギルドの補助役として機能。"
-  },
-
-  {
-    name: "ヨドコウ",
-    code: "5451",
-    role: "ATTACK",
-    roleJa: "攻撃",
-    icon: "🏹",
-    score: 73,
-    stability: 69,
-    growth: 73,
-    dividend: 76,
-    value: 72,
-    strength: "景気回復局面での上昇余地。",
-    weakness: "景気敏感性が高め。",
-    adviceTitle: "押し目待ち",
-    advice: "価格が下がった局面で再評価。"
-  },
-
-  {
-    name: "メンタルヘルステクノロジーズ",
-    code: "9218",
-    role: "MAGIC",
-    roleJa: "魔法",
-    icon: "✨",
-    score: 69,
-    stability: 57,
-    growth: 82,
-    dividend: 42,
-    value: 64,
-    strength: "成長性が高く、将来戦力候補。",
-    weakness: "安定性が低く値動きが大きい。",
-    adviceTitle: "様子見",
-    advice: "成長枠として保有状況を確認。"
-  },
-
-  {
-    name: "Polaris Holdings",
-    code: "3010",
-    role: "ATTACK",
-    roleJa: "攻撃",
-    icon: "⚔️",
-    score: 67,
-    stability: 55,
-    growth: 76,
-    dividend: 38,
-    value: 71,
-    strength: "景気回復時の上昇余地。",
-    weakness: "変動が大きい。",
-    adviceTitle: "慎重",
-    advice: "リスク管理を優先。"
-  },
-
-  {
-    name: "S ゴールド ETF",
-    code: "314A",
-    role: "SPECIAL",
-    roleJa: "特殊",
-    icon: "💰",
-    score: 88,
-    stability: 91,
-    growth: 55,
-    dividend: 0,
-    value: 83,
-    strength: "株式市場と異なる値動きによる分散効果。",
-    weakness: "インカム目的には向きません。",
-    adviceTitle: "継続",
-    advice: "リスク分散役として有効。"
+    if (el) {
+      el.textContent = text;
+    }
   }
 
-];
 
+  /*
+   * ============================================================
+   * IMPORT MODAL
+   * ============================================================
+   */
 
-/* =========================
-   DOM
-========================= */
+  function openImportModal() {
+    const modal = $("import-modal");
 
-const startScreen =
-  document.getElementById("start-screen");
-
-const dashboardScreen =
-  document.getElementById("dashboard-screen");
-
-const detailScreen =
-  document.getElementById("detail-screen");
-
-const membersScreen =
-  document.getElementById("members-screen");
-
-
-/* =========================
-   SCREEN SWITCH
-========================= */
-
-function showScreen(screen) {
-
-  document
-    .querySelectorAll(".screen")
-    .forEach(item => {
-
-      item.classList.remove("active");
-
-    });
-
-  screen.classList.add("active");
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-}
-
-
-/* =========================
-   RENDER PARTY
-========================= */
-
-function renderParty() {
-
-  const party =
-    document.getElementById("party");
-
-  if (!party) return;
-
-  party.innerHTML = "";
-
-  portfolio
-    .slice(0, 6)
-    .forEach((member, index) => {
-
-      const card =
-        document.createElement("div");
-
-      card.className =
-        "member-card";
-
-      card.innerHTML = `
-
-        <div class="member-score">
-          ${member.score}
-        </div>
-
-        <div class="member-icon">
-          ${member.icon}
-        </div>
-
-        <div class="member-role">
-          ${member.role}
-        </div>
-
-        <div class="member-name">
-          ${member.name}
-        </div>
-
-      `;
-
-      card.addEventListener(
-        "click",
-        () => openDetail(member)
-      );
-
-      party.appendChild(card);
-
-    });
-}
-
-
-/* =========================
-   RENDER HOLDINGS
-========================= */
-
-function renderHoldings() {
-
-  const list =
-    document.getElementById("holdings-list");
-
-  if (!list) return;
-
-  list.innerHTML = "";
-
-  portfolio.forEach(member => {
-
-    const row =
-      document.createElement("div");
-
-    row.className =
-      "holding-row";
-
-    row.innerHTML = `
-
-      <div class="holding-icon">
-        ${member.icon}
-      </div>
-
-      <div class="holding-info">
-
-        <strong>
-          ${member.name}
-        </strong>
-
-        <span>
-          ${member.code} · ${member.roleJa}
-        </span>
-
-      </div>
-
-      <div class="holding-score">
-        ${member.score}
-      </div>
-
-    `;
-
-    row.addEventListener(
-      "click",
-      () => openDetail(member)
-    );
-
-    list.appendChild(row);
-
-  });
-}
-
-
-/* =========================
-   RENDER ALL MEMBERS
-========================= */
-
-function renderAllMembers() {
-
-  const list =
-    document.getElementById(
-      "all-members-list"
-    );
-
-  if (!list) return;
-
-  list.innerHTML = "";
-
-  portfolio.forEach(member => {
-
-    const row =
-      document.createElement("div");
-
-    row.className =
-      "holding-row";
-
-    row.innerHTML = `
-
-      <div class="holding-icon">
-        ${member.icon}
-      </div>
-
-      <div class="holding-info">
-
-        <strong>
-          ${member.name}
-        </strong>
-
-        <span>
-          ${member.code} · ${member.roleJa}
-        </span>
-
-      </div>
-
-      <div class="holding-score">
-        ${member.score}
-      </div>
-
-    `;
-
-    row.addEventListener(
-      "click",
-      () => openDetail(member)
-    );
-
-    list.appendChild(row);
-
-  });
-}
-
-
-/* =========================
-   DETAIL
-========================= */
-
-function openDetail(member) {
-
-  document.getElementById(
-    "detail-icon"
-  ).textContent = member.icon;
-
-  document.getElementById(
-    "detail-role"
-  ).textContent = member.role;
-
-  document.getElementById(
-    "detail-name"
-  ).textContent = member.name;
-
-  document.getElementById(
-    "detail-code"
-  ).textContent = member.code;
-
-  document.getElementById(
-    "detail-score"
-  ).textContent = member.score;
-
-  document.getElementById(
-    "detail-stability"
-  ).textContent = member.stability;
-
-  document.getElementById(
-    "detail-growth"
-  ).textContent = member.growth;
-
-  document.getElementById(
-    "detail-dividend"
-  ).textContent = member.dividend;
-
-  document.getElementById(
-    "detail-value"
-  ).textContent = member.value;
-
-  document.getElementById(
-    "detail-strength"
-  ).textContent = member.strength;
-
-  document.getElementById(
-    "detail-weakness"
-  ).textContent = member.weakness;
-
-  document.getElementById(
-    "detail-advice-title"
-  ).textContent = member.adviceTitle;
-
-  document.getElementById(
-    "detail-advice"
-  ).textContent = member.advice;
-
-  showScreen(detailScreen);
-}
-
-
-/* =========================
-   BUTTONS
-========================= */
-
-document
-  .getElementById("launch-btn")
-  .addEventListener(
-    "click",
-    () => {
-
-      renderParty();
-      renderHoldings();
-
-      showScreen(
-        dashboardScreen
-      );
-
+    if (!modal) {
+      return;
     }
-  );
 
-
-document
-  .getElementById("show-all-btn")
-  .addEventListener(
-    "click",
-    () => {
-
-      renderAllMembers();
-
-      showScreen(
-        membersScreen
-      );
-
-    }
-  );
-
-
-document
-  .getElementById("candidate-btn")
-  .addEventListener(
-    "click",
-    () => {
-
-      alert(
-        "買い候補機能は、実際の株価データ接続後に自動判定します。"
-      );
-
-    }
-  );
-
-
-document
-  .getElementById("back-start-btn")
-  .addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        startScreen
-      );
-
-    }
-  );
-
-
-document
-  .getElementById("detail-back-btn")
-  .addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        dashboardScreen
-      );
-
-    }
-  );
-
-
-document
-  .getElementById("members-back-btn")
-  .addEventListener(
-    "click",
-    () => {
-
-      showScreen(
-        dashboardScreen
-      );
-
-    }
-  );
-
-
-/* =========================
-   INITIALIZE
-========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-
-    console.log(
-      "PA-OS initialized."
-    );
-
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
   }
-);
+
+
+  function closeImportModal() {
+    const modal = $("import-modal");
+
+    if (!modal) {
+      return;
+    }
+
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+
+  /*
+   * ============================================================
+   * PREVIEW
+   * ============================================================
+   */
+
+  function showPreview(dataURL) {
+    const preview = $("preview");
+
+    if (!preview) {
+      console.error("PA-OS: #preview not found");
+      return;
+    }
+
+    preview.innerHTML = "";
+
+    const img = document.createElement("img");
+
+    img.src = dataURL;
+    img.alt = "Portfolio screenshot";
+
+    img.style.display = "block";
+    img.style.width = "100%";
+    img.style.maxWidth = "100%";
+    img.style.height = "auto";
+    img.style.borderRadius = "12px";
+    img.style.marginTop = "12px";
+
+    preview.appendChild(img);
+  }
+
+
+  /*
+   * ============================================================
+   * LOCAL STORAGE
+   * ============================================================
+   */
+
+  function saveImage(dataURL) {
+    try {
+      localStorage.setItem(
+        SCREENSHOT_KEY,
+        dataURL
+      );
+
+      return true;
+
+    } catch (error) {
+
+      console.error(
+        "PA-OS: localStorage save failed",
+        error
+      );
+
+      return false;
+    }
+  }
+
+
+  function loadImage() {
+    try {
+
+      return localStorage.getItem(
+        SCREENSHOT_KEY
+      );
+
+    } catch (error) {
+
+      console.error(
+        "PA-OS: localStorage read failed",
+        error
+      );
+
+      return null;
+    }
+  }
+
+
+  /*
+   * ============================================================
+   * FILE READER
+   * ============================================================
+   */
+
+  function readFile(file) {
+
+    return new Promise((resolve, reject) => {
+
+      if (!file) {
+        reject(
+          new Error("No file selected.")
+        );
+
+        return;
+      }
+
+      const reader =
+        new FileReader();
+
+
+      reader.onload = () => {
+
+        if (
+          typeof reader.result !== "string"
+        ) {
+
+          reject(
+            new Error(
+              "Invalid image data."
+            )
+          );
+
+          return;
+        }
+
+        resolve(reader.result);
+      };
+
+
+      reader.onerror = () => {
+
+        reject(
+          reader.error ||
+          new Error(
+            "Could not read image."
+          )
+        );
+      };
+
+
+      reader.readAsDataURL(file);
+
+    });
+  }
+
+
+  /*
+   * ============================================================
+   * IMAGE RESIZE
+   * ============================================================
+   */
+
+  function resizeImage(
+    dataURL,
+    maxWidth = 2000
+  ) {
+
+    return new Promise((resolve) => {
+
+      const img = new Image();
+
+
+      img.onload = () => {
+
+        try {
+
+          const width =
+            img.naturalWidth ||
+            img.width;
+
+          const height =
+            img.naturalHeight ||
+            img.height;
+
+
+          if (!width || !height) {
+
+            resolve(dataURL);
+
+            return;
+          }
+
+
+          const scale =
+            Math.min(
+              1,
+              maxWidth / width
+            );
+
+
+          const newWidth =
+            Math.max(
+              1,
+              Math.round(width * scale)
+            );
+
+
+          const newHeight =
+            Math.max(
+              1,
+              Math.round(height * scale)
+            );
+
+
+          const canvas =
+            document.createElement(
+              "canvas"
+            );
+
+
+          canvas.width =
+            newWidth;
+
+          canvas.height =
+            newHeight;
+
+
+          const ctx =
+            canvas.getContext(
+              "2d"
+            );
+
+
+          if (!ctx) {
+
+            resolve(dataURL);
+
+            return;
+          }
+
+
+          ctx.drawImage(
+            img,
+            0,
+            0,
+            newWidth,
+            newHeight
+          );
+
+
+          try {
+
+            resolve(
+              canvas.toDataURL(
+                "image/jpeg",
+                0.9
+              )
+            );
+
+          } catch (error) {
+
+            console.warn(
+              "PA-OS: resize failed",
+              error
+            );
+
+            resolve(dataURL);
+          }
+
+        } catch (error) {
+
+          console.warn(
+            "PA-OS: image processing failed",
+            error
+          );
+
+          resolve(dataURL);
+        }
+      };
+
+
+      img.onerror = () => {
+
+        resolve(dataURL);
+      };
+
+
+      img.src = dataURL;
+
+    });
+  }
+
+
+  /*
+   * ============================================================
+   * HANDLE PHOTO
+   * ============================================================
+   */
+
+  async function handlePhoto(file) {
+
+    if (!file) {
+      return;
+    }
+
+
+    setText(
+      "import-status",
+      "画像を読み込んでいます..."
+    );
+
+    setText(
+      "modal-status",
+      "画像を読み込んでいます..."
+    );
+
+
+    try {
+
+      /*
+       * Read original
+       */
+
+      const original =
+        await readFile(file);
+
+
+      /*
+       * Resize
+       */
+
+      const image =
+        await resizeImage(
+          original
+        );
+
+
+      /*
+       * Save
+       */
+
+      const saved =
+        saveImage(image);
+
+
+      /*
+       * Preview
+       */
+
+      showPreview(image);
+
+
+      /*
+       * Status
+       */
+
+      if (saved) {
+
+        setText(
+          "import-status",
+          "画像を保存しました。OCRを実行できます。"
+        );
+
+        setText(
+          "modal-status",
+          "画像を保存しました。"
+        );
+
+      } else {
+
+        setText(
+          "import-status",
+          "画像を読み込みました。"
+        );
+
+        setText(
+          "modal-status",
+          "画像を読み込みました。"
+        );
+      }
+
+
+      /*
+       * Close modal
+       */
+
+      closeImportModal();
+
+
+    } catch (error) {
+
+      console.error(
+        "PA-OS: image import failed",
+        error
+      );
+
+
+      setText(
+        "import-status",
+        "画像の読み込みに失敗しました。"
+      );
+
+
+      setText(
+        "modal-status",
+        "画像の読み込みに失敗しました。"
+      );
+    }
+  }
+
+
+  /*
+   * ============================================================
+   * OCR
+   * ============================================================
+   */
+
+  async function runOCR() {
+
+    const button =
+      $("ocr-btn");
+
+    const status =
+      $("ocr-status");
+
+    const result =
+      $("ocr-result");
+
+
+    if (button) {
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        "OCR実行中...";
+    }
+
+
+    if (status) {
+
+      status.textContent =
+        "OCR: 準備中...";
+    }
+
+
+    /*
+     * Get saved image
+     */
+
+    let image =
+      loadImage();
+
+
+    /*
+     * Fallback to preview
+     */
+
+    if (!image) {
+
+      const preview =
+        $("preview");
+
+      const img =
+        preview &&
+        preview.querySelector("img");
+
+
+      if (img && img.src) {
+
+        image =
+          img.src;
+      }
+    }
+
+
+    /*
+     * No image
+     */
+
+    if (!image) {
+
+      setText(
+        "ocr-status",
+        "OCR: 写真がありません。先に写真を選択してください。"
+      );
+
+
+      if (button) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Run OCR";
+      }
+
+
+      return;
+    }
+
+
+    /*
+     * Check Tesseract
+     */
+
+    if (
+      !window.Tesseract ||
+      typeof window.Tesseract.recognize !== "function"
+    ) {
+
+      setText(
+        "ocr-status",
+        "OCR: Tesseract.jsを読み込めませんでした。"
+      );
+
+
+      console.error(
+        "PA-OS: Tesseract.js unavailable."
+      );
+
+
+      if (button) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Run OCR";
+      }
+
+
+      return;
+    }
+
+
+    try {
+
+      /*
+       * Start
+       */
+
+      setText(
+        "ocr-status",
+        "OCR: 日本語データを読み込んでいます..."
+      );
+
+
+      const response =
+        await Tesseract.recognize(
+          image,
+          "jpn",
+          {
+
+            logger: (message) => {
+
+              if (!status) {
+                return;
+              }
+
+
+              if (
+                message &&
+                typeof message.progress === "number"
+              ) {
+
+                const percent =
+                  Math.round(
+                    message.progress * 100
+                  );
+
+
+                let state =
+                  message.status ||
+                  "processing";
+
+
+                if (
+                  state ===
+                  "loading tesseract core"
+                ) {
+
+                  state =
+                    "OCRエンジン読み込み";
+
+                } else if (
+                  state ===
+                  "initializing tesseract"
+                ) {
+
+                  state =
+                    "初期化";
+
+                } else if (
+                  state ===
+                  "loading language traineddata"
+                ) {
+
+                  state =
+                    "日本語データ読み込み";
+
+                } else if (
+                  state ===
+                  "recognizing text"
+                ) {
+
+                  state =
+                    "文字認識";
+                }
+
+
+                status.textContent =
+                  `OCR: ${state} — ${percent}%`;
+              }
+            }
+          }
+        );
+
+
+      /*
+       * Result
+       */
+
+      const text =
+        response &&
+        response.data &&
+        typeof response.data.text === "string"
+          ? response.data.text.trim()
+          : "";
+
+
+      /*
+       * Complete
+       */
+
+      setText(
+        "ocr-status",
+        "OCR: 完了"
+      );
+
+
+      if (result) {
+
+        result.textContent =
+          text ||
+          "文字を認識できませんでした。";
+      }
+
+
+      console.log(
+        "PA-OS OCR result:",
+        text
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "PA-OS: OCR failed",
+        error
+      );
+
+
+      setText(
+        "ocr-status",
+        "OCR: エラーが発生しました。"
+      );
+
+
+      if (result) {
+
+        result.textContent =
+          "";
+      }
+
+
+    } finally {
+
+      if (button) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Run OCR";
+      }
+    }
+  }
+
+
+  /*
+   * ============================================================
+   * LEDGER
+   * ============================================================
+   */
+
+  function renderLedger() {
+
+    const ledger =
+      $("ledger-cards");
+
+
+    if (!ledger) {
+      return;
+    }
+
+
+    ledger.innerHTML = `
+      <div class="card">
+        <h3>Portfolio</h3>
+        <p class="muted">
+          ポートフォリオ写真を読み込むと、
+          ここに台帳データを表示します。
+        </p>
+      </div>
+    `;
+
+
+    setText(
+      "total-assets",
+      "—"
+    );
+
+    setText(
+      "total-profit",
+      "—"
+    );
+
+    setText(
+      "num-holdings",
+      "0"
+    );
+  }
+
+
+  function openLedger() {
+
+    const screen =
+      $("ledger-screen");
+
+
+    if (!screen) {
+      return;
+    }
+
+
+    screen.classList.add(
+      "open"
+    );
+
+    screen.setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+
+    renderLedger();
+  }
+
+
+  function closeLedger() {
+
+    const screen =
+      $("ledger-screen");
+
+
+    if (!screen) {
+      return;
+    }
+
+
+    screen.classList.remove(
+      "open"
+    );
+
+    screen.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+  }
+
+
+  /*
+   * ============================================================
+   * INITIALIZE
+   * ============================================================
+   */
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      console.log(
+        "PA-OS: initialization started."
+      );
+
+
+      /*
+       * --------------------------------------------------------
+       * Elements
+       * --------------------------------------------------------
+       */
+
+      const input =
+        $("portfolio-input");
+
+
+      const chooseButton =
+        $("choose-photo-btn");
+
+
+      const modalSelectButton =
+        $("modal-select-photo");
+
+
+      const openImportButton =
+        $("open-import");
+
+
+      const closeModalButton =
+        $("modal-close");
+
+
+      const openLedgerButton =
+        $("open-ledger");
+
+
+      const closeLedgerButton =
+        $("close-ledger");
+
+
+      const ocrButton =
+        $("ocr-btn");
+
+
+      /*
+       * --------------------------------------------------------
+       * File input
+       *
+       * IMPORTANT:
+       * We DO NOT use input.click().
+       *
+       * The HTML label opens the iPhone photo picker.
+       * --------------------------------------------------------
+       */
+
+      if (!input) {
+
+        console.error(
+          "PA-OS ERROR: #portfolio-input not found."
+        );
+
+      } else {
+
+        input.addEventListener(
+          "change",
+          async (event) => {
+
+            console.log(
+              "PA-OS: photo selected."
+            );
+
+
+            const file =
+              event.target.files &&
+              event.target.files[0];
+
+
+            if (!file) {
+              return;
+            }
+
+
+            await handlePhoto(
+              file
+            );
+
+
+            /*
+             * Allow same photo to be selected again.
+             */
+
+            try {
+
+              event.target.value =
+                "";
+
+            } catch (error) {
+
+              console.warn(
+                "PA-OS: input reset failed",
+                error
+              );
+            }
+          }
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Choose button
+       *
+       * The HTML <label> already opens the input.
+       *
+       * DO NOT call input.click() here.
+       * --------------------------------------------------------
+       */
+
+      if (chooseButton) {
+
+        console.log(
+          "PA-OS: Choose button ready."
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Modal select button
+       *
+       * Also a label.
+       * No JavaScript click handler needed.
+       * --------------------------------------------------------
+       */
+
+      if (modalSelectButton) {
+
+        console.log(
+          "PA-OS: Modal photo selector ready."
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Import modal
+       * --------------------------------------------------------
+       */
+
+      if (openImportButton) {
+
+        openImportButton.addEventListener(
+          "click",
+          (event) => {
+
+            event.preventDefault();
+
+            openImportModal();
+          }
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Close modal
+       * --------------------------------------------------------
+       */
+
+      if (closeModalButton) {
+
+        closeModalButton.addEventListener(
+          "click",
+          (event) => {
+
+            event.preventDefault();
+
+            closeImportModal();
+          }
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Ledger
+       * --------------------------------------------------------
+       */
+
+      if (openLedgerButton) {
+
+        openLedgerButton.addEventListener(
+          "click",
+          openLedger
+        );
+      }
+
+
+      if (closeLedgerButton) {
+
+        closeLedgerButton.addEventListener(
+          "click",
+          closeLedger
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * OCR
+       * --------------------------------------------------------
+       */
+
+      if (ocrButton) {
+
+        ocrButton.addEventListener(
+          "click",
+          runOCR
+        );
+
+        console.log(
+          "PA-OS: OCR button ready."
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Load saved image
+       * --------------------------------------------------------
+       */
+
+      const saved =
+        loadImage();
+
+
+      if (saved) {
+
+        showPreview(
+          saved
+        );
+
+
+        setText(
+          "import-status",
+          "保存済みの写真を読み込みました。"
+        );
+      }
+
+
+      /*
+       * --------------------------------------------------------
+       * Ledger
+       * --------------------------------------------------------
+       */
+
+      renderLedger();
+
+
+      /*
+       * --------------------------------------------------------
+       * Initial modal
+       *
+       * Only show when there is no saved image.
+       * --------------------------------------------------------
+       */
+
+      if (!saved) {
+
+        setTimeout(
+          openImportModal,
+          200
+        );
+      }
+
+
+      console.log(
+        "PA-OS: initialization complete."
+      );
+    }
+  );
+
+})();
