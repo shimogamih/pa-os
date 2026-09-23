@@ -1,76 +1,51 @@
 (() => {
   "use strict";
 
-  /*
-   * ============================================================
-   * PA-OS
-   * Portfolio Screenshot / Preview / OCR
-   * ============================================================
-   */
-
   const SCREENSHOT_KEY = "portfolio_image";
 
   const $ = (id) => document.getElementById(id);
 
-
-  /*
-   * ============================================================
-   * TEXT
-   * ============================================================
-   */
+  // ==============================
+  // TEXT
+  // ==============================
 
   function setText(id, text) {
     const el = $(id);
-
     if (el) {
       el.textContent = text;
     }
   }
 
-
-  /*
-   * ============================================================
-   * IMPORT MODAL
-   * ============================================================
-   */
+  // ==============================
+  // MODAL
+  // ==============================
 
   function openImportModal() {
     const modal = $("import-modal");
 
-    if (!modal) {
-      return;
-    }
+    if (!modal) return;
 
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
   }
 
-
   function closeImportModal() {
     const modal = $("import-modal");
 
-    if (!modal) {
-      return;
-    }
+    if (!modal) return;
 
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
   }
 
-
-  /*
-   * ============================================================
-   * PREVIEW
-   * ============================================================
-   */
+  // ==============================
+  // IMAGE PREVIEW
+  // ==============================
 
   function showPreview(dataURL) {
     const preview = $("preview");
 
-    if (!preview) {
-      console.error("PA-OS: #preview not found");
-      return;
-    }
+    if (!preview) return;
 
     preview.innerHTML = "";
 
@@ -79,22 +54,12 @@
     img.src = dataURL;
     img.alt = "Portfolio screenshot";
 
-    img.style.display = "block";
-    img.style.width = "100%";
-    img.style.maxWidth = "100%";
-    img.style.height = "auto";
-    img.style.borderRadius = "12px";
-    img.style.marginTop = "12px";
-
     preview.appendChild(img);
   }
 
-
-  /*
-   * ============================================================
-   * LOCAL STORAGE
-   * ============================================================
-   */
+  // ==============================
+  // SAVE IMAGE
+  // ==============================
 
   function saveImage(dataURL) {
     try {
@@ -106,9 +71,8 @@
       return true;
 
     } catch (error) {
-
       console.error(
-        "PA-OS: localStorage save failed",
+        "PA-OS: image save failed",
         error
       );
 
@@ -116,18 +80,19 @@
     }
   }
 
+  // ==============================
+  // LOAD IMAGE
+  // ==============================
 
   function loadImage() {
     try {
-
       return localStorage.getItem(
         SCREENSHOT_KEY
       );
 
     } catch (error) {
-
       console.error(
-        "PA-OS: localStorage read failed",
+        "PA-OS: image load failed",
         error
       );
 
@@ -135,182 +100,121 @@
     }
   }
 
-
-  /*
-   * ============================================================
-   * FILE READER
-   * ============================================================
-   */
+  // ==============================
+  // FILE → DATA URL
+  // ==============================
 
   function readFile(file) {
-
     return new Promise((resolve, reject) => {
 
       if (!file) {
         reject(
-          new Error("No file selected.")
+          new Error("ファイルがありません")
         );
-
         return;
       }
 
-      const reader =
-        new FileReader();
+      if (!file.type.startsWith("image/")) {
+        reject(
+          new Error("画像ファイルではありません")
+        );
+        return;
+      }
 
+      const reader = new FileReader();
 
       reader.onload = () => {
-
-        if (
-          typeof reader.result !== "string"
-        ) {
-
-          reject(
-            new Error(
-              "Invalid image data."
-            )
-          );
-
-          return;
-        }
-
         resolve(reader.result);
       };
 
-
       reader.onerror = () => {
-
         reject(
-          reader.error ||
-          new Error(
-            "Could not read image."
-          )
+          new Error("画像を読み込めませんでした")
         );
       };
 
-
       reader.readAsDataURL(file);
-
     });
   }
 
-
-  /*
-   * ============================================================
-   * IMAGE RESIZE
-   * ============================================================
-   */
+  // ==============================
+  // IMAGE RESIZE
+  // ==============================
 
   function resizeImage(
     dataURL,
     maxWidth = 2000
   ) {
-
     return new Promise((resolve) => {
 
       const img = new Image();
 
-
       img.onload = () => {
+
+        const width =
+          img.naturalWidth ||
+          img.width;
+
+        const height =
+          img.naturalHeight ||
+          img.height;
+
+        if (!width || !height) {
+          resolve(dataURL);
+          return;
+        }
+
+        const scale =
+          Math.min(
+            1,
+            maxWidth / width
+          );
+
+        const newWidth =
+          Math.round(
+            width * scale
+          );
+
+        const newHeight =
+          Math.round(
+            height * scale
+          );
+
+        const canvas =
+          document.createElement("canvas");
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        const ctx =
+          canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(dataURL);
+          return;
+        }
+
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          newWidth,
+          newHeight
+        );
 
         try {
 
-          const width =
-            img.naturalWidth ||
-            img.width;
-
-          const height =
-            img.naturalHeight ||
-            img.height;
-
-
-          if (!width || !height) {
-
-            resolve(dataURL);
-
-            return;
-          }
-
-
-          const scale =
-            Math.min(
-              1,
-              maxWidth / width
-            );
-
-
-          const newWidth =
-            Math.max(
-              1,
-              Math.round(width * scale)
-            );
-
-
-          const newHeight =
-            Math.max(
-              1,
-              Math.round(height * scale)
-            );
-
-
-          const canvas =
-            document.createElement(
-              "canvas"
-            );
-
-
-          canvas.width =
-            newWidth;
-
-          canvas.height =
-            newHeight;
-
-
-          const ctx =
-            canvas.getContext(
-              "2d"
-            );
-
-
-          if (!ctx) {
-
-            resolve(dataURL);
-
-            return;
-          }
-
-
-          ctx.drawImage(
-            img,
-            0,
-            0,
-            newWidth,
-            newHeight
+          resolve(
+            canvas.toDataURL(
+              "image/jpeg",
+              0.9
+            )
           );
-
-
-          try {
-
-            resolve(
-              canvas.toDataURL(
-                "image/jpeg",
-                0.9
-              )
-            );
-
-          } catch (error) {
-
-            console.warn(
-              "PA-OS: resize failed",
-              error
-            );
-
-            resolve(dataURL);
-          }
 
         } catch (error) {
 
           console.warn(
-            "PA-OS: image processing failed",
+            "PA-OS: resize failed",
             error
           );
 
@@ -318,443 +222,116 @@
         }
       };
 
-
       img.onerror = () => {
-
         resolve(dataURL);
       };
 
-
       img.src = dataURL;
-
     });
   }
 
-
-  /*
-   * ============================================================
-   * HANDLE PHOTO
-   * ============================================================
-   */
+  // ==============================
+  // HANDLE PHOTO
+  // ==============================
 
   async function handlePhoto(file) {
 
-    if (!file) {
-      return;
-    }
-
-
     setText(
       "import-status",
-      "画像を読み込んでいます..."
+      "📥 写真を読み込んでいます..."
     );
 
     setText(
       "modal-status",
-      "画像を読み込んでいます..."
+      "📥 写真を読み込んでいます..."
     );
-
 
     try {
 
-      /*
-       * Read original
-       */
-
+      // ① 読み込み
       const original =
         await readFile(file);
 
-
-      /*
-       * Resize
-       */
-
+      // ② サイズ調整
       const image =
         await resizeImage(
           original
         );
 
-
-      /*
-       * Save
-       */
-
+      // ③ 保存
       const saved =
         saveImage(image);
 
-
-      /*
-       * Preview
-       */
-
+      // ④ 表示
       showPreview(image);
 
-
-      /*
-       * Status
-       */
-
+      // ⑤ 結果表示
       if (saved) {
 
         setText(
           "import-status",
-          "画像を保存しました。OCRを実行できます。"
+          "✅ 写真を読み込みました。"
         );
 
         setText(
           "modal-status",
-          "画像を保存しました。"
+          "✅ 写真を保存しました。"
         );
 
       } else {
 
         setText(
           "import-status",
-          "画像を読み込みました。"
-        );
-
-        setText(
-          "modal-status",
-          "画像を読み込みました。"
+          "✅ 写真を読み込みました。"
         );
       }
 
-
-      /*
-       * Close modal
-       */
-
+      // ⑥ モーダルを閉じる
       closeImportModal();
 
+      console.log(
+        "PA-OS: photo imported successfully."
+      );
 
     } catch (error) {
 
       console.error(
-        "PA-OS: image import failed",
+        "PA-OS: photo import failed",
         error
       );
-
 
       setText(
         "import-status",
-        "画像の読み込みに失敗しました。"
+        "❌ 写真の読み込みに失敗しました。"
       );
-
 
       setText(
         "modal-status",
-        "画像の読み込みに失敗しました。"
+        "❌ 写真の読み込みに失敗しました。"
       );
     }
   }
 
-
-  /*
-   * ============================================================
-   * OCR
-   * ============================================================
-   */
-
-  async function runOCR() {
-
-    const button =
-      $("ocr-btn");
-
-    const status =
-      $("ocr-status");
-
-    const result =
-      $("ocr-result");
-
-
-    if (button) {
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "OCR実行中...";
-    }
-
-
-    if (status) {
-
-      status.textContent =
-        "OCR: 準備中...";
-    }
-
-
-    /*
-     * Get saved image
-     */
-
-    let image =
-      loadImage();
-
-
-    /*
-     * Fallback to preview
-     */
-
-    if (!image) {
-
-      const preview =
-        $("preview");
-
-      const img =
-        preview &&
-        preview.querySelector("img");
-
-
-      if (img && img.src) {
-
-        image =
-          img.src;
-      }
-    }
-
-
-    /*
-     * No image
-     */
-
-    if (!image) {
-
-      setText(
-        "ocr-status",
-        "OCR: 写真がありません。先に写真を選択してください。"
-      );
-
-
-      if (button) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Run OCR";
-      }
-
-
-      return;
-    }
-
-
-    /*
-     * Check Tesseract
-     */
-
-    if (
-      !window.Tesseract ||
-      typeof window.Tesseract.recognize !== "function"
-    ) {
-
-      setText(
-        "ocr-status",
-        "OCR: Tesseract.jsを読み込めませんでした。"
-      );
-
-
-      console.error(
-        "PA-OS: Tesseract.js unavailable."
-      );
-
-
-      if (button) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Run OCR";
-      }
-
-
-      return;
-    }
-
-
-    try {
-
-      /*
-       * Start
-       */
-
-      setText(
-        "ocr-status",
-        "OCR: 日本語データを読み込んでいます..."
-      );
-
-
-      const response =
-        await Tesseract.recognize(
-          image,
-          "jpn",
-          {
-
-            logger: (message) => {
-
-              if (!status) {
-                return;
-              }
-
-
-              if (
-                message &&
-                typeof message.progress === "number"
-              ) {
-
-                const percent =
-                  Math.round(
-                    message.progress * 100
-                  );
-
-
-                let state =
-                  message.status ||
-                  "processing";
-
-
-                if (
-                  state ===
-                  "loading tesseract core"
-                ) {
-
-                  state =
-                    "OCRエンジン読み込み";
-
-                } else if (
-                  state ===
-                  "initializing tesseract"
-                ) {
-
-                  state =
-                    "初期化";
-
-                } else if (
-                  state ===
-                  "loading language traineddata"
-                ) {
-
-                  state =
-                    "日本語データ読み込み";
-
-                } else if (
-                  state ===
-                  "recognizing text"
-                ) {
-
-                  state =
-                    "文字認識";
-                }
-
-
-                status.textContent =
-                  `OCR: ${state} — ${percent}%`;
-              }
-            }
-          }
-        );
-
-
-      /*
-       * Result
-       */
-
-      const text =
-        response &&
-        response.data &&
-        typeof response.data.text === "string"
-          ? response.data.text.trim()
-          : "";
-
-
-      /*
-       * Complete
-       */
-
-      setText(
-        "ocr-status",
-        "OCR: 完了"
-      );
-
-
-      if (result) {
-
-        result.textContent =
-          text ||
-          "文字を認識できませんでした。";
-      }
-
-
-      console.log(
-        "PA-OS OCR result:",
-        text
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "PA-OS: OCR failed",
-        error
-      );
-
-
-      setText(
-        "ocr-status",
-        "OCR: エラーが発生しました。"
-      );
-
-
-      if (result) {
-
-        result.textContent =
-          "";
-      }
-
-
-    } finally {
-
-      if (button) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Run OCR";
-      }
-    }
-  }
-
-
-  /*
-   * ============================================================
-   * LEDGER
-   * ============================================================
-   */
+  // ==============================
+  // LEDGER
+  // ==============================
 
   function renderLedger() {
 
     const ledger =
       $("ledger-cards");
 
-
-    if (!ledger) {
-      return;
-    }
-
+    if (!ledger) return;
 
     ledger.innerHTML = `
       <div class="card">
         <h3>Portfolio</h3>
         <p class="muted">
-          ポートフォリオ写真を読み込むと、
-          ここに台帳データを表示します。
+          写真を読み込むと、
+          ここにポートフォリオ台帳を表示します。
         </p>
       </div>
     `;
-
 
     setText(
       "total-assets",
@@ -772,46 +349,31 @@
     );
   }
 
-
   function openLedger() {
 
     const screen =
       $("ledger-screen");
 
+    if (!screen) return;
 
-    if (!screen) {
-      return;
-    }
-
-
-    screen.classList.add(
-      "open"
-    );
+    screen.classList.add("open");
 
     screen.setAttribute(
       "aria-hidden",
       "false"
     );
 
-
     renderLedger();
   }
-
 
   function closeLedger() {
 
     const screen =
       $("ledger-screen");
 
+    if (!screen) return;
 
-    if (!screen) {
-      return;
-    }
-
-
-    screen.classList.remove(
-      "open"
-    );
+    screen.classList.remove("open");
 
     screen.setAttribute(
       "aria-hidden",
@@ -819,164 +381,56 @@
     );
   }
 
-
-  /*
-   * ============================================================
-   * INITIALIZE
-   * ============================================================
-   */
+  // ==============================
+  // START
+  // ==============================
 
   document.addEventListener(
     "DOMContentLoaded",
     () => {
 
-      console.log(
-        "PA-OS: initialization started."
-      );
-
-
-      /*
-       * --------------------------------------------------------
-       * Elements
-       * --------------------------------------------------------
-       */
-
       const input =
         $("portfolio-input");
-
-
-      const chooseButton =
-        $("choose-photo-btn");
-
-
-      const modalSelectButton =
-        $("modal-select-photo");
-
 
       const openImportButton =
         $("open-import");
 
-
       const closeModalButton =
         $("modal-close");
-
 
       const openLedgerButton =
         $("open-ledger");
 
-
       const closeLedgerButton =
         $("close-ledger");
 
+      // ------------------------------
+      // PHOTO INPUT
+      // ------------------------------
 
-      const ocrButton =
-        $("ocr-btn");
-
-
-      /*
-       * --------------------------------------------------------
-       * File input
-       *
-       * IMPORTANT:
-       * We DO NOT use input.click().
-       *
-       * The HTML label opens the iPhone photo picker.
-       * --------------------------------------------------------
-       */
-
-      if (!input) {
-
-        console.error(
-          "PA-OS ERROR: #portfolio-input not found."
-        );
-
-      } else {
+      if (input) {
 
         input.addEventListener(
           "change",
           async (event) => {
 
-            console.log(
-              "PA-OS: photo selected."
-            );
-
-
             const file =
               event.target.files &&
               event.target.files[0];
 
+            if (!file) return;
 
-            if (!file) {
-              return;
-            }
+            await handlePhoto(file);
 
-
-            await handlePhoto(
-              file
-            );
-
-
-            /*
-             * Allow same photo to be selected again.
-             */
-
-            try {
-
-              event.target.value =
-                "";
-
-            } catch (error) {
-
-              console.warn(
-                "PA-OS: input reset failed",
-                error
-              );
-            }
+            // 同じ写真を再選択可能にする
+            event.target.value = "";
           }
         );
       }
 
-
-      /*
-       * --------------------------------------------------------
-       * Choose button
-       *
-       * The HTML <label> already opens the input.
-       *
-       * DO NOT call input.click() here.
-       * --------------------------------------------------------
-       */
-
-      if (chooseButton) {
-
-        console.log(
-          "PA-OS: Choose button ready."
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * Modal select button
-       *
-       * Also a label.
-       * No JavaScript click handler needed.
-       * --------------------------------------------------------
-       */
-
-      if (modalSelectButton) {
-
-        console.log(
-          "PA-OS: Modal photo selector ready."
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * Import modal
-       * --------------------------------------------------------
-       */
+      // ------------------------------
+      // OPEN MODAL
+      // ------------------------------
 
       if (openImportButton) {
 
@@ -991,12 +445,9 @@
         );
       }
 
-
-      /*
-       * --------------------------------------------------------
-       * Close modal
-       * --------------------------------------------------------
-       */
+      // ------------------------------
+      // CLOSE MODAL
+      // ------------------------------
 
       if (closeModalButton) {
 
@@ -1011,12 +462,9 @@
         );
       }
 
-
-      /*
-       * --------------------------------------------------------
-       * Ledger
-       * --------------------------------------------------------
-       */
+      // ------------------------------
+      // LEDGER
+      // ------------------------------
 
       if (openLedgerButton) {
 
@@ -1026,7 +474,6 @@
         );
       }
 
-
       if (closeLedgerButton) {
 
         closeLedgerButton.addEventListener(
@@ -1035,78 +482,38 @@
         );
       }
 
-
-      /*
-       * --------------------------------------------------------
-       * OCR
-       * --------------------------------------------------------
-       */
-
-      if (ocrButton) {
-
-        ocrButton.addEventListener(
-          "click",
-          runOCR
-        );
-
-        console.log(
-          "PA-OS: OCR button ready."
-        );
-      }
-
-
-      /*
-       * --------------------------------------------------------
-       * Load saved image
-       * --------------------------------------------------------
-       */
+      // ------------------------------
+      // SAVED IMAGE
+      // ------------------------------
 
       const saved =
         loadImage();
 
-
       if (saved) {
 
-        showPreview(
-          saved
-        );
-
+        showPreview(saved);
 
         setText(
           "import-status",
-          "保存済みの写真を読み込みました。"
+          "✅ 保存済みの写真を読み込みました。"
         );
-      }
 
-
-      /*
-       * --------------------------------------------------------
-       * Ledger
-       * --------------------------------------------------------
-       */
-
-      renderLedger();
-
-
-      /*
-       * --------------------------------------------------------
-       * Initial modal
-       *
-       * Only show when there is no saved image.
-       * --------------------------------------------------------
-       */
-
-      if (!saved) {
+      } else {
 
         setTimeout(
           openImportModal,
-          200
+          300
         );
       }
 
+      // ------------------------------
+      // LEDGER
+      // ------------------------------
+
+      renderLedger();
 
       console.log(
-        "PA-OS: initialization complete."
+        "PA-OS: ready."
       );
     }
   );
