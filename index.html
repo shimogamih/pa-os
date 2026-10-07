@@ -6,104 +6,168 @@
 
   <title>PA-OS</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
-
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      background: #0b0f17;
-      color: #f5f5f5;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #080c14;
+      color: #f4f4f4;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        sans-serif;
     }
 
     .container {
-      max-width: 700px;
-      margin: auto;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
       padding: 20px;
     }
 
     h1 {
       color: #d4af37;
+      margin-bottom: 4px;
     }
 
-    button,
-    .file-btn {
-      display: inline-block;
-      padding: 14px 18px;
-      margin: 8px 4px;
-      border: 1px solid #d4af37;
-      border-radius: 10px;
-      background: #151b27;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      text-decoration: none;
+    h2 {
+      margin-top: 0;
     }
 
-    .file-btn {
-      background: #3b2f10;
+    .subtitle {
+      color: #8f9aad;
+      margin-top: 0;
     }
 
     .card {
-      background: #121925;
+      background: #111824;
       border: 1px solid #283247;
-      border-radius: 14px;
-      padding: 16px;
+      border-radius: 16px;
+      padding: 18px;
       margin-top: 16px;
     }
 
-    .muted {
-      color: #9aa4b5;
+    .gold {
+      color: #d4af37;
     }
 
-    #portfolio-input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    #preview img {
+    label {
       display: block;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      color: #aeb7c7;
+      font-size: 14px;
+    }
+
+    input {
       width: 100%;
-      height: auto;
+      padding: 13px;
+      border-radius: 10px;
+      border: 1px solid #354158;
+      background: #080d16;
+      color: white;
+      font-size: 16px;
+    }
+
+    button {
+      border: 1px solid #d4af37;
+      background: #171d2a;
+      color: white;
+      border-radius: 10px;
+      padding: 13px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: #4a3810;
+    }
+
+    button.danger {
+      border-color: #7c3f46;
+      color: #ff9ca7;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .holding {
+      background: #0b111c;
+      border: 1px solid #293449;
       border-radius: 12px;
+      padding: 14px;
       margin-top: 12px;
     }
 
-    .modal,
-    .screen {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.8);
-      z-index: 1000;
-      overflow-y: auto;
+    .holding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
 
-    .modal.open,
-    .screen.open {
-      display: block;
+    .holding-name {
+      font-weight: bold;
+      font-size: 17px;
     }
 
-    .modal-box,
-    .screen-box {
-      max-width: 700px;
-      margin: 60px auto;
-      padding: 20px;
-      background: #111722;
-      border: 1px solid #39445b;
-      border-radius: 16px;
+    .holding-code {
+      color: #d4af37;
+      font-size: 13px;
     }
 
-    pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: #080b11;
-      padding: 12px;
+    .holding-info {
+      color: #aeb7c7;
+      margin-top: 8px;
+      line-height: 1.7;
+    }
+
+    .empty {
+      color: #7e899b;
+      text-align: center;
+      padding: 20px 5px;
+    }
+
+    .success {
+      color: #76d99a;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .summary-item {
+      background: #0b111c;
       border-radius: 10px;
-      overflow-x: auto;
+      padding: 14px;
+    }
+
+    .summary-label {
+      color: #8994a7;
+      font-size: 12px;
+    }
+
+    .summary-value {
+      margin-top: 5px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
     }
   </style>
 </head>
@@ -113,153 +177,200 @@
 <div class="container">
 
   <h1>PA-OS</h1>
+  <p class="subtitle">
+    Portfolio AI Operating System
+  </p>
+
+
+  <!-- ==============================
+       PORTFOLIO INPUT
+  =============================== -->
 
   <div class="card">
-    <h2>Portfolio AI</h2>
-    <p class="muted">
-      ポートフォリオを登録してください。
+
+    <h2>
+      <span class="gold">Portfolio Ledger</span>
+    </h2>
+
+    <p class="subtitle">
+      まずは保有銘柄を手入力します。
     </p>
 
-    <!-- カメラ指定なし。iPhoneの写真選択を使用 -->
-    <input
-      id="portfolio-input"
-      type="file"
-      accept="image/*"
-    >
+    <div id="holding-form">
 
-    <label
-      for="portfolio-input"
-      id="choose-photo-btn"
-      class="file-btn"
-    >
-      📷 写真を選択
-    </label>
+      <label for="stock-name">
+        銘柄名
+      </label>
 
-    <button id="open-import">
-      ポートフォリオ取込
-    </button>
+      <input
+        id="stock-name"
+        type="text"
+        placeholder="例：四国電力"
+      >
 
-    <button id="open-ledger">
-      台帳を見る
-    </button>
 
-    <div id="import-status" class="muted">
-      写真を選択してください。
+      <label for="stock-code">
+        銘柄コード
+      </label>
+
+      <input
+        id="stock-code"
+        type="text"
+        inputmode="numeric"
+        placeholder="例：9507"
+      >
+
+
+      <label for="stock-shares">
+        保有株数
+      </label>
+
+      <input
+        id="stock-shares"
+        type="number"
+        inputmode="numeric"
+        min="1"
+        placeholder="例：100"
+      >
+
+
+      <label for="stock-cost">
+        取得単価
+      </label>
+
+      <input
+        id="stock-cost"
+        type="number"
+        inputmode="decimal"
+        min="0"
+        step="0.01"
+        placeholder="例：1200"
+      >
+
+
+      <div class="button-row">
+
+        <button
+          id="add-stock-btn"
+          class="primary"
+        >
+          ＋ 銘柄を追加
+        </button>
+
+        <button
+          id="clear-form-btn"
+        >
+          入力をクリア
+        </button>
+
+      </div>
+
     </div>
 
-    <div id="preview"></div>
+
+    <div id="save-status"></div>
+
   </div>
+
+
+  <!-- ==============================
+       SUMMARY
+  =============================== -->
 
   <div class="card">
 
-    <h2>OCR</h2>
+    <h2>現在のポートフォリオ</h2>
 
-    <button id="ocr-btn">
-      Run OCR
-    </button>
+    <div class="summary">
 
-    <div id="ocr-status" class="muted"></div>
+      <div class="summary-item">
+        <div class="summary-label">
+          銘柄数
+        </div>
 
-    <pre id="ocr-result"></pre>
+        <div
+          id="total-holdings"
+          class="summary-value"
+        >
+          0
+        </div>
+      </div>
+
+
+      <div class="summary-item">
+        <div class="summary-label">
+          投資元本
+        </div>
+
+        <div
+          id="total-cost"
+          class="summary-value"
+        >
+          ¥0
+        </div>
+      </div>
+
+    </div>
 
   </div>
+
+
+  <!-- ==============================
+       HOLDINGS
+  =============================== -->
 
   <div class="card">
 
-    <h2>Portfolio Ledger</h2>
+    <h2>保有銘柄</h2>
 
-    <div id="ledger-cards"></div>
+    <div id="holdings-list">
 
-    <p>
-      評価額：
-      <span id="total-assets">—</span>
+      <div class="empty">
+        まだ銘柄が登録されていません。
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==============================
+       TEST
+  =============================== -->
+
+  <div class="card">
+
+    <h2>PA-OSテスト</h2>
+
+    <p class="subtitle">
+      台帳が正しく保存されているか確認します。
     </p>
 
-    <p>
-      損益：
-      <span id="total-profit">—</span>
-    </p>
+    <div class="button-row">
 
-    <p>
-      銘柄数：
-      <span id="num-holdings">0</span>
-    </p>
+      <button
+        id="reload-btn"
+      >
+        台帳を再読み込み
+      </button>
+
+      <button
+        id="delete-all-btn"
+        class="danger"
+      >
+        全銘柄を削除
+      </button>
+
+    </div>
+
+    <p id="test-status"></p>
 
   </div>
 
 </div>
 
 
-<!-- ==============================
-     IMPORT MODAL
-============================== -->
-
-<div
-  id="import-modal"
-  class="modal"
-  aria-hidden="true"
->
-
-  <div class="modal-box">
-
-    <h2>ポートフォリオ取込</h2>
-
-    <p class="muted">
-      iPhoneの写真ライブラリから
-      ポートフォリオ画面を選択してください。
-    </p>
-
-    <!-- これもカメラ指定なし -->
-    <label
-      for="portfolio-input"
-      id="modal-select-photo"
-      class="file-btn"
-    >
-      🖼 写真を選択
-    </label>
-
-    <button id="modal-close">
-      閉じる
-    </button>
-
-    <p
-      id="modal-status"
-      class="muted"
-    >
-      写真を選択してください。
-    </p>
-
-  </div>
-
-</div>
-
-
-<!-- ==============================
-     LEDGER SCREEN
-============================== -->
-
-<div
-  id="ledger-screen"
-  class="screen"
-  aria-hidden="true"
->
-
-  <div class="screen-box">
-
-    <h2>Portfolio Ledger</h2>
-
-    <div id="ledger-cards"></div>
-
-    <button id="close-ledger">
-      閉じる
-    </button>
-
-  </div>
-
-</div>
-
-
-<script src="script.js" defer></script>
+<script src="script.js"></script>
 
 </body>
 </html>
