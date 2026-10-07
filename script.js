@@ -12,16 +12,22 @@
       const data = localStorage.getItem(LEDGER_KEY);
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error(error);
+      console.error("PA-OS: 読み込みエラー", error);
       return [];
     }
   }
 
   function saveLedger(data) {
-    localStorage.setItem(
-      LEDGER_KEY,
-      JSON.stringify(data)
-    );
+    try {
+      localStorage.setItem(
+        LEDGER_KEY,
+        JSON.stringify(data)
+      );
+      return true;
+    } catch (error) {
+      console.error("PA-OS: 保存エラー", error);
+      return false;
+    }
   }
 
   function money(value) {
@@ -33,8 +39,11 @@
     const ledger = loadLedger();
     const list = $("holdings-list");
 
-    $("total-holdings").textContent =
-      ledger.length;
+    if (!list) return;
+
+    if ($("total-holdings")) {
+      $("total-holdings").textContent = ledger.length;
+    }
 
     let total = 0;
 
@@ -44,8 +53,9 @@
         Number(item.cost);
     });
 
-    $("total-cost").textContent =
-      money(total);
+    if ($("total-cost")) {
+      $("total-cost").textContent = money(total);
+    }
 
     if (!ledger.length) {
 
@@ -81,6 +91,7 @@
           </div>
 
           <button
+            type="button"
             class="danger"
             data-index="${index}"
           >
@@ -90,6 +101,7 @@
         </div>
 
         <div class="holding-info">
+
           保有株数：
           ${Number(item.shares).toLocaleString()} 株<br>
 
@@ -101,6 +113,7 @@
             Number(item.shares) *
             Number(item.cost)
           )}
+
         </div>
       `;
 
@@ -128,15 +141,16 @@
             render();
           }
         );
+
       });
   }
 
 
-  function addStock() {
+  // =========================
+  // 銘柄追加
+  // =========================
 
-    console.log(
-      "PA-OS: 銘柄追加ボタンが押されました"
-    );
+  function addStock() {
 
     const name =
       $("stock-name").value.trim();
@@ -145,15 +159,10 @@
       $("stock-code").value.trim();
 
     const shares =
-      Number(
-        $("stock-shares").value
-      );
+      Number($("stock-shares").value);
 
     const cost =
-      Number(
-        $("stock-cost").value
-      );
-
+      Number($("stock-cost").value);
 
     if (!name) {
       alert("銘柄名を入力してください");
@@ -175,143 +184,228 @@
       return;
     }
 
-
     const ledger =
       loadLedger();
 
-
     ledger.push({
 
-      name: name,
-
-      code: code,
-
-      shares: shares,
-
-      cost: cost,
+      name,
+      code,
+      shares,
+      cost,
 
       createdAt:
         new Date().toISOString()
 
     });
 
-
-    saveLedger(ledger);
-
+    if (!saveLedger(ledger)) {
+      alert("保存に失敗しました");
+      return;
+    }
 
     $("stock-name").value = "";
     $("stock-code").value = "";
     $("stock-shares").value = "";
     $("stock-cost").value = "";
 
-
     $("save-status").innerHTML = `
       <p class="success">
-        ✓ ${name} を登録しました。
+        ✓ ${name} を保存しました
       </p>
     `;
 
-
     render();
-
-
-    console.log(
-      "PA-OS: 登録完了",
-      ledger
-    );
   }
 
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+  // =========================
+  // 入力クリア
+  // =========================
 
-      console.log(
-        "PA-OS: JavaScript起動"
-      );
+  function clearForm() {
 
+    $("stock-name").value = "";
+    $("stock-code").value = "";
+    $("stock-shares").value = "";
+    $("stock-cost").value = "";
 
-      const button =
-        $("add-stock-btn");
-
-
-      if (!button) {
-
-        console.error(
-          "PA-OS ERROR: add-stock-btn が見つかりません"
-        );
-
-        return;
-      }
+  }
 
 
-      button.addEventListener(
+  // =========================
+  // 全削除
+  // =========================
+
+  function deleteAll() {
+
+    if (!confirm("全銘柄を削除しますか？")) {
+      return;
+    }
+
+    localStorage.removeItem(LEDGER_KEY);
+
+    render();
+  }
+
+
+  // =========================
+  // AI分析
+  // =========================
+
+  function runAIAnalysis() {
+
+    const ledger = loadLedger();
+
+    const result =
+      $("ai-analysis-result");
+
+    if (!result) return;
+
+    if (!ledger.length) {
+
+      result.innerHTML = `
+        <p class="subtitle">
+          先に銘柄を登録してください。
+        </p>
+      `;
+
+      return;
+    }
+
+    let totalCost = 0;
+
+    ledger.forEach(item => {
+
+      totalCost +=
+        Number(item.shares) *
+        Number(item.cost);
+
+    });
+
+    result.innerHTML = `
+
+      <div class="holding" style="margin-top:16px;">
+
+        <div class="gold">
+          PA-OS 分析準備完了
+        </div>
+
+        <div class="holding-info">
+
+          登録銘柄：
+          ${ledger.length} 銘柄<br>
+
+          投資元本：
+          ${money(totalCost)}<br><br>
+
+          <strong>
+            AI分析対象
+          </strong>
+
+          <br>
+
+          ${ledger.map(item => `
+            ・${item.name}
+            （${item.code}）
+          `).join("<br>")}
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+
+  // =========================
+  // 起動
+  // =========================
+
+  function start() {
+
+    console.log("PA-OS 起動");
+
+    const addButton =
+      $("add-stock-btn");
+
+    if (addButton) {
+
+      addButton.addEventListener(
         "click",
         addStock
       );
 
-
-      const clearButton =
-        $("clear-form-btn");
-
-
-      if (clearButton) {
-
-        clearButton.addEventListener(
-          "click",
-          () => {
-
-            $("stock-name").value = "";
-            $("stock-code").value = "";
-            $("stock-shares").value = "";
-            $("stock-cost").value = "";
-          }
-        );
-      }
-
-
-      const reloadButton =
-        $("reload-btn");
-
-
-      if (reloadButton) {
-
-        reloadButton.addEventListener(
-          "click",
-          render
-        );
-      }
-
-
-      const deleteAllButton =
-        $("delete-all-btn");
-
-
-      if (deleteAllButton) {
-
-        deleteAllButton.addEventListener(
-          "click",
-          () => {
-
-            if (
-              confirm(
-                "全銘柄を削除しますか？"
-              )
-            ) {
-
-              localStorage.removeItem(
-                LEDGER_KEY
-              );
-
-              render();
-            }
-          }
-        );
-      }
-
-
-      render();
     }
-  );
+
+    const clearButton =
+      $("clear-form-btn");
+
+    if (clearButton) {
+
+      clearButton.addEventListener(
+        "click",
+        clearForm
+      );
+
+    }
+
+    const reloadButton =
+      $("reload-btn");
+
+    if (reloadButton) {
+
+      reloadButton.addEventListener(
+        "click",
+        render
+      );
+
+    }
+
+    const deleteAllButton =
+      $("delete-all-btn");
+
+    if (deleteAllButton) {
+
+      deleteAllButton.addEventListener(
+        "click",
+        deleteAll
+      );
+
+    }
+
+    const aiButton =
+      $("ai-analysis-btn");
+
+    if (aiButton) {
+
+      aiButton.addEventListener(
+        "click",
+        runAIAnalysis
+      );
+
+    }
+
+    render();
+
+  }
+
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      start
+    );
+
+  } else {
+
+    start();
+
+  }
 
 })();
