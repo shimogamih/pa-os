@@ -381,54 +381,9 @@
 </div>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
+  <script src="script.js"></script>
 
-  const button = document.getElementById("ai-analysis-btn");
-  const result = document.getElementById("ai-analysis-result");
 
-  if (!button) {
-    alert("AI分析ボタンが見つかりません");
-    return;
-  }
-
-  button.addEventListener("click", function () {
-
-    const data =
-      localStorage.getItem("pa_os_portfolio_ledger");
-
-    if (!data) {
-      result.innerHTML =
-        "<p>まず銘柄を登録してください。</p>";
-      return;
-    }
-
-    let ledger;
-
-    try {
-      ledger = JSON.parse(data);
-    } catch (error) {
-      result.innerHTML =
-        "<p>台帳データを読み込めませんでした。</p>";
-      return;
-    }
-
-    result.innerHTML = `
-      <div class="holding" style="margin-top:16px;">
-        <div class="gold">
-          ✓ AI分析ボタンが正常に動作しました
-        </div>
-
-        <div class="holding-info">
-          登録銘柄数：${ledger.length} 銘柄
-        </div>
-      </div>
-    `;
-
-  });
-
-});
-</script>
 
 
 </body>
