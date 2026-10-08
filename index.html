@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>PA-OS</title>
 
   <style>
@@ -166,6 +165,49 @@
       font-weight: bold;
     }
 
+    .score {
+      font-size: 30px;
+      font-weight: bold;
+      color: #d4af37;
+      margin-top: 10px;
+    }
+
+    .score-good {
+      color: #76d99a;
+    }
+
+    .score-watch {
+      color: #f0c674;
+    }
+
+    .score-bad {
+      color: #ff7b7b;
+    }
+
+    .metric {
+      margin-top: 12px;
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      color: #aeb7c7;
+      font-size: 14px;
+    }
+
+    .bar {
+      height: 8px;
+      background: #222c3c;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .bar-inner {
+      height: 100%;
+      background: #d4af37;
+    }
+
     .hidden {
       display: none;
     }
@@ -177,14 +219,13 @@
 <div class="container">
 
   <h1>PA-OS</h1>
+
   <p class="subtitle">
     Portfolio AI Operating System
   </p>
 
 
-  <!-- ==============================
-       PORTFOLIO INPUT
-  =============================== -->
+  <!-- 銘柄入力 -->
 
   <div class="card">
 
@@ -193,89 +234,72 @@
     </h2>
 
     <p class="subtitle">
-      まずは保有銘柄を手入力します。
+      保有銘柄を登録します。
     </p>
 
-    <div id="holding-form">
+    <label for="stock-name">銘柄名</label>
 
-      <label for="stock-name">
-        銘柄名
-      </label>
+    <input
+      id="stock-name"
+      type="text"
+      placeholder="例：四国電力"
+    >
 
-      <input
-        id="stock-name"
-        type="text"
-        placeholder="例：四国電力"
+    <label for="stock-code">銘柄コード</label>
+
+    <input
+      id="stock-code"
+      type="text"
+      inputmode="numeric"
+      placeholder="例：9507"
+    >
+
+    <label for="stock-shares">保有株数</label>
+
+    <input
+      id="stock-shares"
+      type="number"
+      inputmode="numeric"
+      min="1"
+      placeholder="例：100"
+    >
+
+    <label for="stock-cost">取得単価</label>
+
+    <input
+      id="stock-cost"
+      type="number"
+      inputmode="decimal"
+      min="0"
+      step="0.01"
+      placeholder="例：1200"
+    >
+
+    <div class="button-row">
+
+      <button
+        id="add-stock-btn"
+        class="primary"
+        type="button"
       >
+        ＋ 銘柄を追加
+      </button>
 
-
-      <label for="stock-code">
-        銘柄コード
-      </label>
-
-      <input
-        id="stock-code"
-        type="text"
-        inputmode="numeric"
-        placeholder="例：9507"
+      <button
+        id="clear-form-btn"
+        type="button"
       >
-
-
-      <label for="stock-shares">
-        保有株数
-      </label>
-
-      <input
-        id="stock-shares"
-        type="number"
-        inputmode="numeric"
-        min="1"
-        placeholder="例：100"
-      >
-
-
-      <label for="stock-cost">
-        取得単価
-      </label>
-
-      <input
-        id="stock-cost"
-        type="number"
-        inputmode="decimal"
-        min="0"
-        step="0.01"
-        placeholder="例：1200"
-      >
-
-
-      <div class="button-row">
-
-        <button
-          id="add-stock-btn"
-          class="primary"
-        >
-          ＋ 銘柄を追加
-        </button>
-
-        <button
-          id="clear-form-btn"
-        >
-          入力をクリア
-        </button>
-
-      </div>
+        入力をクリア
+      </button>
 
     </div>
-
 
     <div id="save-status"></div>
 
   </div>
 
 
-  <!-- ==============================
-       SUMMARY
-  =============================== -->
+  <!-- サマリー -->
 
   <div class="card">
 
@@ -284,6 +308,7 @@
     <div class="summary">
 
       <div class="summary-item">
+
         <div class="summary-label">
           銘柄数
         </div>
@@ -294,10 +319,11 @@
         >
           0
         </div>
+
       </div>
 
-
       <div class="summary-item">
+
         <div class="summary-label">
           投資元本
         </div>
@@ -308,6 +334,7 @@
         >
           ¥0
         </div>
+
       </div>
 
     </div>
@@ -315,9 +342,7 @@
   </div>
 
 
-  <!-- ==============================
-       HOLDINGS
-  =============================== -->
+  <!-- 保有銘柄 -->
 
   <div class="card">
 
@@ -334,22 +359,17 @@
   </div>
 
 
-  <!-- ==============================
-       TEST
-  =============================== -->
+  <!-- テスト -->
 
   <div class="card">
 
     <h2>PA-OSテスト</h2>
 
-    <p class="subtitle">
-      台帳が正しく保存されているか確認します。
-    </p>
-
     <div class="button-row">
 
       <button
         id="reload-btn"
+        type="button"
       >
         台帳を再読み込み
       </button>
@@ -357,6 +377,7 @@
       <button
         id="delete-all-btn"
         class="danger"
+        type="button"
       >
         全銘柄を削除
       </button>
@@ -366,23 +387,36 @@
     <p id="test-status"></p>
 
   </div>
-<div class="card">
-  <h2>AIポートフォリオ分析</h2>
 
-  <button
-    id="ai-analysis-btn"
-    class="primary"
-    type="button"
-  >
-    🤖 AIでポートフォリオを分析
-  </button>
 
-  <div id="ai-analysis-result"></div>
+  <!-- AI分析 -->
+
+  <div class="card">
+
+    <h2>
+      <span class="gold">AIポートフォリオ分析</span>
+    </h2>
+
+    <p class="subtitle">
+      PA-OS独自100点評価エンジン
+    </p>
+
+    <button
+      id="ai-analysis-btn"
+      class="primary"
+      type="button"
+    >
+      🤖 PA-OSで分析する
+    </button>
+
+    <div id="ai-analysis-result"></div>
+
+  </div>
+
 </div>
-</div>
 
-<script src="script.js?v=3"></script>
 
+<script src="script.js?v=4"></script>
 
 </body>
 </html>
