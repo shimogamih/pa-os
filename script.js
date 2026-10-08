@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const KEY = "pa_os_portfolio_ledger";
 
+  const $ = (id) => document.getElementById(id);
+
   function load() {
     try {
       return JSON.parse(localStorage.getItem(KEY) || "[]");
@@ -15,96 +17,122 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function money(value) {
-    return "¥" + Number(value).toLocaleString("ja-JP");
+    return "¥" + Number(value || 0).toLocaleString("ja-JP");
   }
 
-
   // =========================
-  // ポートフォリオ表示
+  // 台帳表示
   // =========================
 
   function render() {
 
     const data = load();
 
-    const holdingsCount =
-      document.getElementById("total-holdings");
+    const holdingsCount = $("total-holdings");
+    const totalCost = $("total-cost");
+    const list = $("holdings-list");
 
-    const totalCost =
-      document.getElementById("total-cost");
-
-    const list =
-      document.getElementById("holdings-list");
-
-    if (!holdingsCount || !totalCost || !list) return;
+    if (!holdingsCount || !totalCost || !list) {
+      return;
+    }
 
     holdingsCount.textContent = data.length;
 
     let total = 0;
 
-    data.forEach(item => {
-      total +=
-        Number(item.shares) *
-        Number(item.cost);
+    data.forEach(stock => {
+      total += Number(stock.shares || 0) * Number(stock.cost || 0);
     });
 
     totalCost.textContent = money(total);
 
     if (data.length === 0) {
-
       list.innerHTML =
         '<div class="empty">まだ銘柄が登録されていません。</div>';
-
       return;
     }
 
-    list.innerHTML = data.map((item, index) => `
+    list.innerHTML = data.map((stock, index) => {
 
-      <div class="holding">
+      return `
+        <div class="holding">
 
-        <div class="holding-header">
+          <div class="holding-header">
 
-          <div>
+            <div>
+              <div class="holding-name">
+                ${escapeHtml(stock.name)}
+              </div>
 
-            <div class="holding-name">
-              ${item.name}
+              <div class="holding-code">
+                ${escapeHtml(stock.code)}
+              </div>
             </div>
 
-            <div class="holding-code">
-              ${item.code}
-            </div>
+            <button
+              type="button"
+              class="danger"
+              data-delete="${index}"
+            >
+              削除
+            </button>
 
           </div>
 
-          <button
-            type="button"
-            class="danger"
-            onclick="deleteStock(${index})"
-          >
-            削除
-          </button>
+          <div class="holding-info">
+
+            保有株数：
+            ${Number(stock.shares).toLocaleString()} 株<br>
+
+            取得単価：
+            ${money(stock.cost)}<br>
+
+            投資元本：
+            ${money(
+              Number(stock.shares) * Number(stock.cost)
+            )}
+
+          </div>
 
         </div>
+      `;
 
-        <div class="holding-info">
+    }).join("");
 
-          保有株数：
-          ${Number(item.shares).toLocaleString()} 株<br>
+    document.querySelectorAll("[data-delete]").forEach(button => {
 
-          取得単価：
-          ${money(item.cost)}<br>
+      button.addEventListener("click", function () {
 
-          投資元本：
-          ${money(
-            Number(item.shares) *
-            Number(item.cost)
-          )}
+        const index = Number(this.dataset.delete);
 
-        </div>
+        const current = load();
 
-      </div>
+        current.splice(index, 1);
 
-    `).join("");
+        save(current);
+
+        render();
+
+      });
+
+    });
+
+  }
+
+
+  // =========================
+  // HTML安全処理
+  // =========================
+
+  function escapeHtml(value) {
+
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
   }
 
 
@@ -112,25 +140,20 @@ document.addEventListener("DOMContentLoaded", function () {
   // 銘柄追加
   // =========================
 
-  document
-    .getElementById("add-stock-btn")
-    .addEventListener("click", function () {
+  const addButton = $("add-stock-btn");
 
-      const name =
-        document.getElementById("stock-name").value.trim();
+  if (addButton) {
 
-      const code =
-        document.getElementById("stock-code").value.trim();
+    addButton.addEventListener("click", function () {
 
-      const shares =
-        Number(document.getElementById("stock-shares").value);
-
-      const cost =
-        Number(document.getElementById("stock-cost").value);
+      const name = $("stock-name").value.trim();
+      const code = $("stock-code").value.trim();
+      const shares = Number($("stock-shares").value);
+      const cost = Number($("stock-cost").value);
 
       if (!name || !code || !shares || !cost) {
 
-        alert("4項目すべて入力してください");
+        alert("銘柄名・コード・株数・取得単価をすべて入力してください。");
 
         return;
       }
@@ -147,57 +170,70 @@ document.addEventListener("DOMContentLoaded", function () {
 
       save(data);
 
-      document.getElementById("stock-name").value = "";
-      document.getElementById("stock-code").value = "";
-      document.getElementById("stock-shares").value = "";
-      document.getElementById("stock-cost").value = "";
+      $("stock-name").value = "";
+      $("stock-code").value = "";
+      $("stock-shares").value = "";
+      $("stock-cost").value = "";
 
-      document.getElementById("save-status").innerHTML =
-        `<p class="success">✓ ${name} を保存しました</p>`;
+      $("save-status").innerHTML =
+        `<p class="success">✓ ${escapeHtml(name)} を保存しました</p>`;
 
       render();
+
     });
+
+  }
 
 
   // =========================
   // 入力クリア
   // =========================
 
-  document
-    .getElementById("clear-form-btn")
-    .addEventListener("click", function () {
+  const clearButton = $("clear-form-btn");
 
-      document.getElementById("stock-name").value = "";
-      document.getElementById("stock-code").value = "";
-      document.getElementById("stock-shares").value = "";
-      document.getElementById("stock-cost").value = "";
+  if (clearButton) {
+
+    clearButton.addEventListener("click", function () {
+
+      $("stock-name").value = "";
+      $("stock-code").value = "";
+      $("stock-shares").value = "";
+      $("stock-cost").value = "";
 
     });
+
+  }
 
 
   // =========================
   // 再読み込み
   // =========================
 
-  document
-    .getElementById("reload-btn")
-    .addEventListener("click", function () {
+  const reloadButton = $("reload-btn");
+
+  if (reloadButton) {
+
+    reloadButton.addEventListener("click", function () {
 
       render();
 
-      document.getElementById("test-status").textContent =
-        "台帳を再読み込みしました";
+      $("test-status").textContent =
+        "✓ 台帳を再読み込みしました";
 
     });
+
+  }
 
 
   // =========================
   // 全削除
   // =========================
 
-  document
-    .getElementById("delete-all-btn")
-    .addEventListener("click", function () {
+  const deleteAllButton = $("delete-all-btn");
+
+  if (deleteAllButton) {
+
+    deleteAllButton.addEventListener("click", function () {
 
       if (!confirm("全銘柄を削除しますか？")) {
         return;
@@ -207,142 +243,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
       render();
 
-      document.getElementById("test-status").textContent =
-        "台帳を削除しました";
+      $("test-status").textContent =
+        "✓ 台帳を削除しました";
 
     });
 
-
-  // =========================
-  // 個別削除
-  // =========================
-
-  window.deleteStock = function (index) {
-
-    const data = load();
-
-    data.splice(index, 1);
-
-    save(data);
-
-    render();
-
-  };
-
-
-  // ==================================================
-  // PA-OS 分析エンジン
-  // ==================================================
-
-  function calculateScore(stock) {
-
-    /*
-      PA-OS 100点ルール
-
-      配当       20点
-      財務       20点
-      成長性     15点
-      割安度     15点
-      安定性     15点
-      株価位置   10点
-      リスク      5点
-
-      合計      100点
-    */
-
-    const rules = {
-
-      dividend: 20,
-      financial: 20,
-      growth: 15,
-      valuation: 15,
-      stability: 15,
-      price: 10,
-      risk: 5
-
-    };
-
-    /*
-      現段階ではWeb情報をまだ取得していないため、
-      ここでは「何点取れる設計なのか」を保持する。
-
-      後からWeb検索で取得した数値を
-      この項目へ入れるだけで採点できる構造。
-    */
-
-    return {
-
-      maxScore: 100,
-
-      categories: [
-
-        {
-          name: "配当",
-          max: rules.dividend,
-          score: null
-        },
-
-        {
-          name: "財務",
-          max: rules.financial,
-          score: null
-        },
-
-        {
-          name: "成長性",
-          max: rules.growth,
-          score: null
-        },
-
-        {
-          name: "割安度",
-          max: rules.valuation,
-          score: null
-        },
-
-        {
-          name: "安定性",
-          max: rules.stability,
-          score: null
-        },
-
-        {
-          name: "株価位置",
-          max: rules.price,
-          score: null
-        },
-
-        {
-          name: "リスク",
-          max: rules.risk,
-          score: null
-        }
-
-      ]
-
-    };
   }
 
 
   // =========================
-  // AI分析ボタン
+  // PA-OS AI分析
   // =========================
 
-  document
-    .getElementById("ai-analysis-btn")
-    .addEventListener("click", function () {
+  const aiButton = $("ai-analysis-btn");
+
+  if (aiButton) {
+
+    aiButton.addEventListener("click", function () {
 
       const data = load();
 
-      const result =
-        document.getElementById("ai-analysis-result");
+      const result = $("ai-analysis-result");
 
-      if (!data.length) {
+      if (!result) {
+        return;
+      }
+
+      if (data.length === 0) {
 
         result.innerHTML = `
-          <p class="subtitle">
-            先に銘柄を登録してください。
-          </p>
+          <div class="holding">
+            <div class="gold">
+              ⚔️ PA-OS分析エンジン
+            </div>
+
+            <div class="holding-info">
+              先に保有銘柄を登録してください。
+            </div>
+          </div>
         `;
 
         return;
@@ -350,28 +288,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
       let html = `
+        <div class="holding">
 
-        <div class="holding" style="margin-top:16px;">
-
-          <div class="gold"
-               style="font-size:20px;">
+          <div
+            class="gold"
+            style="
+              font-size:20px;
+              font-weight:bold;
+            "
+          >
             ⚔️ PA-OS分析エンジン
           </div>
 
-          <div class="holding-info">
-
-            分析対象：
-            ${data.length}銘柄
-
+          <div
+            class="holding-info"
+            style="margin-top:8px;"
+          >
+            分析対象：${data.length}銘柄
           </div>
-
       `;
 
 
       data.forEach(stock => {
-
-        const analysis =
-          calculateScore(stock);
 
         html += `
 
@@ -389,13 +327,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 font-weight:bold;
               "
             >
-              ${stock.name}
-              <span
-                class="holding-code"
-              >
-                ${stock.code}
+              ${escapeHtml(stock.name)}
+
+              <span class="holding-code">
+                ${escapeHtml(stock.code)}
               </span>
             </div>
+
 
             <div
               style="
@@ -405,23 +343,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 font-weight:bold;
               "
             >
-              評価：情報取得待ち
+              評価：分析準備完了
             </div>
+
 
             <div
               class="holding-info"
               style="margin-top:12px;"
             >
 
-              配当　　— / ${analysis.categories[0].max}点<br>
-              財務　　— / ${analysis.categories[1].max}点<br>
-              成長性　— / ${analysis.categories[2].max}点<br>
-              割安度　— / ${analysis.categories[3].max}点<br>
-              安定性　— / ${analysis.categories[4].max}点<br>
-              株価位置— / ${analysis.categories[5].max}点<br>
-              リスク　— / ${analysis.categories[6].max}点
+              配当　　— / 20点<br>
+              財務　　— / 20点<br>
+              成長性　— / 15点<br>
+              割安度　— / 15点<br>
+              安定性　— / 15点<br>
+              株価位置— / 10点<br>
+              リスク　— / 5点
 
             </div>
+
 
             <div
               style="
@@ -429,7 +369,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 color:#8f9aad;
               "
             >
-              🌐 最新Web情報を取得すると
+              🌐 最新Web情報を取得すると、
               PA-OS独自ルールで100点評価します。
             </div>
 
@@ -446,11 +386,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
 
+  }
+
 
   // =========================
   // 起動
   // =========================
 
   render();
+
+  if ($("test-status")) {
+
+    $("test-status").textContent =
+      "✓ PA-OS起動完了";
+
+  }
 
 });
