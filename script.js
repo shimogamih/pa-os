@@ -1,12 +1,12 @@
+
 document.addEventListener("DOMContentLoaded", function () {
-
   const KEY = "pa_os_portfolio_ledger";
-
-  const $ = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
   function load() {
     try {
-      return JSON.parse(localStorage.getItem(KEY) || "[]");
+      const data = JSON.parse(localStorage.getItem(KEY) || "[]");
+      return Array.isArray(data) ? data : [];
     } catch (e) {
       return [];
     }
@@ -16,390 +16,390 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem(KEY, JSON.stringify(data));
   }
 
+  function num(value) {
+    if (value === "" || value === null || value === undefined) {
+      return null;
+    }
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   function money(value) {
-    return "¥" + Number(value || 0).toLocaleString("ja-JP");
+    return "¥" + Math.round(value).toLocaleString("ja-JP");
   }
 
-  // =========================
-  // 台帳表示
-  // =========================
-
-  function render() {
-
-    const data = load();
-
-    const holdingsCount = $("total-holdings");
-    const totalCost = $("total-cost");
-    const list = $("holdings-list");
-
-    if (!holdingsCount || !totalCost || !list) {
-      return;
-    }
-
-    holdingsCount.textContent = data.length;
-
-    let total = 0;
-
-    data.forEach(stock => {
-      total += Number(stock.shares || 0) * Number(stock.cost || 0);
-    });
-
-    totalCost.textContent = money(total);
-
-    if (data.length === 0) {
-      list.innerHTML =
-        '<div class="empty">まだ銘柄が登録されていません。</div>';
-      return;
-    }
-
-    list.innerHTML = data.map((stock, index) => {
-
-      return `
-        <div class="holding">
-
-          <div class="holding-header">
-
-            <div>
-              <div class="holding-name">
-                ${escapeHtml(stock.name)}
-              </div>
-
-              <div class="holding-code">
-                ${escapeHtml(stock.code)}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              class="danger"
-              data-delete="${index}"
-            >
-              削除
-            </button>
-
-          </div>
-
-          <div class="holding-info">
-
-            保有株数：
-            ${Number(stock.shares).toLocaleString()} 株<br>
-
-            取得単価：
-            ${money(stock.cost)}<br>
-
-            投資元本：
-            ${money(
-              Number(stock.shares) * Number(stock.cost)
-            )}
-
-          </div>
-
-        </div>
-      `;
-
-    }).join("");
-
-    document.querySelectorAll("[data-delete]").forEach(button => {
-
-      button.addEventListener("click", function () {
-
-        const index = Number(this.dataset.delete);
-
-        const current = load();
-
-        current.splice(index, 1);
-
-        save(current);
-
-        render();
-
-      });
-
-    });
-
+  function fmt(value, suffix = "") {
+    return value === null || value === undefined
+      ? "データ不足"
+      : value.toLocaleString("ja-JP") + suffix;
   }
-
-
-  // =========================
-  // HTML安全処理
-  // =========================
 
   function escapeHtml(value) {
-
-    return String(value)
+    return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
-
   }
 
+  function costOf(stock) {
+    return Number(stock.shares || 0) * Number(stock.cost || 0);
+  }
 
-  // =========================
-  // 銘柄追加
-  // =========================
+  function currentOf(stock) {
+    return num(stock.current);
+  }
+
+  function valueOf(stock) {
+    const current = currentOf(stock);
+    if (current === null) return null;
+    return Number(stock.shares || 0) * current;
+  }
+
+  function profitOf(stock) {
+    const value = valueOf(stock);
+    if (value === null) return null;
+    return value - costOf(stock);
+  }
+
+  function pctOf(stock) {
+    const profit = profitOf(stock);
+    const cost = costOf(stock);
+    if (profit === null || cost <= 0) return null;
+    return profit / cost * 100;
+  }
+
+  function render() {
+    const data = load();
+
+    if ($("total-holdings")) {
+      $("total-holdings").textContent = data.length;
+    }
+
+    const totalCost = data.reduce((sum, stock) => sum + costOf(stock), 0);
+
+    if ($("total-cost")) {
+      $("total-cost").textContent = money(totalCost);
+    }
+
+    const list = $("holdings-list");
+    if (!list) return;
+
+    if (!data.length) {
+      list.innerHTML = '<div class="empty">まだ銘柄が登録されていません。</div>';
+      return;
+    }
+
+    list.innerHTML = data.map((stock, index) => {
+      const value = valueOf(stock);
+      const profit = profitOf(stock);
+      const pct = pctOf(stock);
+
+      const profitClass = profit === null
+        ? ""
+        : profit >= 0 ? "positive" : "negative";
+
+      return `
+        <div class="holding">
+          <div class="holding-header">
+            <div>
+              <div class="holding-name">${escapeHtml(stock.name)}</div>
+              <div class="holding-code">${escapeHtml(stock.code)}</div>
+            </div>
+            <button type="button" class="danger" data-delete="${index}">
+              削除
+            </button>
+          </div>
+
+          <div class="holding-info">
+            保有株数・口数：${fmt(Number(stock.shares || 0))}<br>
+            取得単価：${money(stock.cost)}<br>
+            投資元本：${money(costOf(stock))}<br>
+            現在株価・基準価額：
+            ${currentOf(stock) === null ? "未入力" : money(currentOf(stock))}<br>
+            評価額：${value === null ? "データ不足" : money(value)}<br>
+            含み損益：
+            <span class="${profitClass}">
+              ${profit === null ? "データ不足" : (profit > 0 ? "+" : "") + money(profit)}
+            </span><br>
+            損益率：
+            <span class="${profitClass}">
+              ${pct === null ? "データ不足" : (pct > 0 ? "+" : "") + pct.toFixed(2) + "%"}
+            </span><br>
+            配当利回り：${fmt(num(stock.dividend), "%")}<br>
+            PER：${fmt(num(stock.per))}<br>
+            PBR：${fmt(num(stock.pbr))}<br>
+            自己資本比率：${fmt(num(stock.equity), "%")}<br>
+            売上成長率：${fmt(num(stock.growth), "%")}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    list.querySelectorAll("[data-delete]").forEach(button => {
+      button.addEventListener("click", function () {
+        const index = Number(this.dataset.delete);
+        const current = load();
+        if (index < 0 || index >= current.length) return;
+        current.splice(index, 1);
+        save(current);
+        render();
+      });
+    });
+  }
+
+  function clearForm() {
+    [
+      "stock-name", "stock-code", "stock-shares", "stock-cost",
+      "stock-current", "stock-dividend", "stock-per", "stock-pbr",
+      "stock-equity", "stock-growth"
+    ].forEach(id => {
+      if ($(id)) $(id).value = "";
+    });
+  }
 
   const addButton = $("add-stock-btn");
 
   if (addButton) {
-
     addButton.addEventListener("click", function () {
-
       const name = $("stock-name").value.trim();
       const code = $("stock-code").value.trim();
-      const shares = Number($("stock-shares").value);
-      const cost = Number($("stock-cost").value);
+      const shares = num($("stock-shares").value);
+      const cost = num($("stock-cost").value);
 
-      if (!name || !code || !shares || !cost) {
-
-        alert("銘柄名・コード・株数・取得単価をすべて入力してください。");
-
+      if (!name || !code || shares === null || shares <= 0 ||
+          cost === null || cost <= 0) {
+        alert("銘柄名・コード・正の株数・取得単価を入力してください。");
         return;
       }
 
       const data = load();
 
       data.push({
-        name: name,
-        code: code,
-        shares: shares,
-        cost: cost,
+        name,
+        code,
+        shares,
+        cost,
+        current: num($("stock-current").value),
+        dividend: num($("stock-dividend").value),
+        per: num($("stock-per").value),
+        pbr: num($("stock-pbr").value),
+        equity: num($("stock-equity").value),
+        growth: num($("stock-growth").value),
         createdAt: new Date().toISOString()
       });
 
-      save(data);
+      try {
+        save(data);
+        clearForm();
 
-      $("stock-name").value = "";
-      $("stock-code").value = "";
-      $("stock-shares").value = "";
-      $("stock-cost").value = "";
+        if ($("save-status")) {
+          $("save-status").innerHTML =
+            `<p class="success">✓ ${escapeHtml(name)} を保存しました。</p>`;
+        }
 
-      $("save-status").innerHTML =
-        `<p class="success">✓ ${escapeHtml(name)} を保存しました</p>`;
+        render();
+      } catch (e) {
+        alert("保存に失敗しました。ブラウザの空き容量を確認してください。");
+      }
+    });
+  }
 
+  if ($("clear-form-btn")) {
+    $("clear-form-btn").addEventListener("click", clearForm);
+  }
+
+  if ($("reload-btn")) {
+    $("reload-btn").addEventListener("click", function () {
       render();
-
+      if ($("test-status")) {
+        $("test-status").textContent = "✓ 台帳を再読み込みしました";
+      }
     });
-
   }
 
-
-  // =========================
-  // 入力クリア
-  // =========================
-
-  const clearButton = $("clear-form-btn");
-
-  if (clearButton) {
-
-    clearButton.addEventListener("click", function () {
-
-      $("stock-name").value = "";
-      $("stock-code").value = "";
-      $("stock-shares").value = "";
-      $("stock-cost").value = "";
-
-    });
-
-  }
-
-
-  // =========================
-  // 再読み込み
-  // =========================
-
-  const reloadButton = $("reload-btn");
-
-  if (reloadButton) {
-
-    reloadButton.addEventListener("click", function () {
-
-      render();
-
-      $("test-status").textContent =
-        "✓ 台帳を再読み込みしました";
-
-    });
-
-  }
-
-
-  // =========================
-  // 全削除
-  // =========================
-
-  const deleteAllButton = $("delete-all-btn");
-
-  if (deleteAllButton) {
-
-    deleteAllButton.addEventListener("click", function () {
-
-      if (!confirm("全銘柄を削除しますか？")) {
+  if ($("delete-all-btn")) {
+    $("delete-all-btn").addEventListener("click", function () {
+      if (!confirm("登録した全銘柄を削除しますか？この操作は取り消せません。")) {
         return;
       }
 
       localStorage.removeItem(KEY);
-
       render();
 
-      $("test-status").textContent =
-        "✓ 台帳を削除しました";
-
+      if ($("test-status")) {
+        $("test-status").textContent = "✓ 台帳を削除しました";
+      }
     });
-
   }
 
+  // 未入力データを推測せず、項目ごとに採点する
+  function scoreItem(value, max, calculator) {
+    if (value === null || value === undefined) {
+      return { score: null, max };
+    }
 
-  // =========================
-  // PA-OS AI分析
-  // =========================
+    return {
+      score: Math.max(0, Math.min(max, calculator(value))),
+      max
+    };
+  }
 
-  const aiButton = $("ai-analysis-btn");
+  function analyzeStock(stock) {
+    const dividend = num(stock.dividend);
+    const per = num(stock.per);
+    const pbr = num(stock.pbr);
+    const equity = num(stock.equity);
+    const growth = num(stock.growth);
+    const current = currentOf(stock);
+    const cost = num(stock.cost);
 
-  if (aiButton) {
+    const scores = [
+      scoreItem(dividend, 20, v =>
+        v >= 4 ? 20 : v >= 3 ? 16 : v >= 2 ? 12 : v >= 1 ? 7 : 2
+      ),
+      scoreItem(equity, 20, v =>
+        v >= 70 ? 20 : v >= 50 ? 17 : v >= 40 ? 14 :
+        v >= 30 ? 10 : v >= 20 ? 6 : 2
+      ),
+      scoreItem(growth, 15, v =>
+        v >= 20 ? 15 : v >= 10 ? 12 : v >= 5 ? 9 :
+        v >= 0 ? 6 : 1
+      ),
+      scoreItem(per, 8, v =>
+        v <= 10 ? 8 : v <= 15 ? 7 : v <= 20 ? 5 :
+        v <= 30 ? 3 : 1
+      ),
+      scoreItem(pbr, 7, v =>
+        v <= 0.7 ? 7 : v <= 1 ? 6 : v <= 1.5 ? 5 :
+        v <= 2 ? 3 : 1
+      ),
+      scoreItem(current !== null && cost > 0
+        ? current / cost * 100 : null, 15, v =>
+        v >= 90 && v <= 110 ? 15 :
+        v >= 80 && v <= 120 ? 12 :
+        v >= 70 && v <= 130 ? 8 : 4
+      )
+    ];
 
-    aiButton.addEventListener("click", function () {
+    const knownScore = scores.reduce(
+      (sum, item) => sum + (item.score === null ? 0 : item.score), 0
+    );
 
+    const knownMax = scores.reduce(
+      (sum, item) => sum + (item.score === null ? 0 : item.max), 0
+    );
+
+    const missing = scores.filter(item => item.score === null).length;
+
+    return { knownScore, knownMax, missing };
+  }
+
+  if ($("ai-analysis-btn")) {
+    $("ai-analysis-btn").addEventListener("click", function () {
       const data = load();
-
       const result = $("ai-analysis-result");
+      if (!result) return;
 
-      if (!result) {
+      if (!data.length) {
+        result.innerHTML =
+          '<div class="empty">先に保有銘柄を登録してください。</div>';
         return;
       }
 
-      if (data.length === 0) {
+      const totalCost = data.reduce((sum, stock) => sum + costOf(stock), 0);
+      let totalValue = 0;
+      let knownValueCount = 0;
+      let totalProfit = 0;
 
-        result.innerHTML = `
-          <div class="holding">
-            <div class="gold">
-              ⚔️ PA-OS分析エンジン
-            </div>
+      data.forEach(stock => {
+        const value = valueOf(stock);
+        const profit = profitOf(stock);
 
-            <div class="holding-info">
-              先に保有銘柄を登録してください。
-            </div>
-          </div>
-        `;
+        if (value !== null) {
+          totalValue += value;
+          knownValueCount++;
+        }
 
-        return;
-      }
+        if (profit !== null) totalProfit += profit;
+      });
 
+      const allValuesKnown = knownValueCount === data.length;
+      const totalPct = totalCost > 0 && allValuesKnown
+        ? totalProfit / totalCost * 100
+        : null;
 
       let html = `
         <div class="holding">
-
-          <div
-            class="gold"
-            style="
-              font-size:20px;
-              font-weight:bold;
-            "
-          >
-            ⚔️ PA-OS分析エンジン
+          <div class="gold"><strong>⚔ PA-OS 分析レポート</strong></div>
+          <div class="holding-info">
+            分析対象：${data.length}銘柄<br>
+            投資元本：${money(totalCost)}<br>
+            評価額：${allValuesKnown ? money(totalValue) : "一部データ不足"}<br>
+            含み損益：
+            <span class="${totalProfit >= 0 ? "positive" : "negative"}">
+              ${allValuesKnown ? (totalProfit > 0 ? "+" : "") + money(totalProfit) : "一部データ不足"}
+            </span><br>
+            損益率：
+            ${totalPct === null ? "データ不足" : (totalPct > 0 ? "+" : "") + totalPct.toFixed(2) + "%"}
           </div>
-
-          <div
-            class="holding-info"
-            style="margin-top:8px;"
-          >
-            分析対象：${data.length}銘柄
-          </div>
+        </div>
       `;
 
-
       data.forEach(stock => {
+        const analysis = analyzeStock(stock);
+        const profit = profitOf(stock);
+        const pct = pctOf(stock);
 
         html += `
-
-          <div
-            style="
-              margin-top:18px;
-              padding-top:16px;
-              border-top:1px solid #293449;
-            "
-          >
-
-            <div
-              style="
-                font-size:18px;
-                font-weight:bold;
-              "
-            >
+          <div class="holding">
+            <div class="holding-name">
               ${escapeHtml(stock.name)}
-
-              <span class="holding-code">
-                ${escapeHtml(stock.code)}
-              </span>
+              <span class="holding-code">${escapeHtml(stock.code)}</span>
             </div>
 
-
-            <div
-              style="
-                margin-top:10px;
-                font-size:24px;
-                color:#d4af37;
-                font-weight:bold;
-              "
-            >
-              評価：分析準備完了
+            <div class="analysis-score">
+              ${analysis.knownMax === 0
+                ? "評価：データ不足"
+                : `暫定評価：${analysis.knownScore}点 / ${analysis.knownMax}点`}
             </div>
 
-
-            <div
-              class="holding-info"
-              style="margin-top:12px;"
-            >
-
-              配当　　— / 20点<br>
-              財務　　— / 20点<br>
-              成長性　— / 15点<br>
-              割安度　— / 15点<br>
-              安定性　— / 15点<br>
-              株価位置— / 10点<br>
-              リスク　— / 5点
-
+            <div class="bar">
+              <div class="bar-fill"
+                style="width:${analysis.knownMax
+                  ? analysis.knownScore / analysis.knownMax * 100
+                  : 0}%"></div>
             </div>
 
-
-            <div
-              style="
-                margin-top:14px;
-                color:#8f9aad;
-              "
-            >
-              🌐 最新Web情報を取得すると、
-              PA-OS独自ルールで100点評価します。
+            <div class="holding-info">
+              評価額：${valueOf(stock) === null ? "データ不足" : money(valueOf(stock))}<br>
+              含み損益：${profit === null ? "データ不足" : money(profit)}<br>
+              損益率：${pct === null ? "データ不足" : pct.toFixed(2) + "%"}<br>
+              配当利回り：${fmt(num(stock.dividend), "%")}<br>
+              PER：${fmt(num(stock.per))}<br>
+              PBR：${fmt(num(stock.pbr))}<br>
+              自己資本比率：${fmt(num(stock.equity), "%")}<br>
+              売上成長率：${fmt(num(stock.growth), "%")}
             </div>
 
+            <p class="warning">
+              ${analysis.missing
+                ? `未入力の評価項目が${analysis.missing}個あります。`
+                : "入力済み項目のルールベース評価です。"}
+              実際の財務分析や最新市場データの取得は行っていません。
+            </p>
           </div>
-
         `;
-
       });
 
-
-      html += `</div>`;
-
       result.innerHTML = html;
-
     });
-
   }
-
-
-  // =========================
-  // 起動
-  // =========================
 
   render();
 
   if ($("test-status")) {
-
-    $("test-status").textContent =
-      "✓ PA-OS起動完了";
-
+    $("test-status").textContent = "✓ PA-OS起動完了";
   }
-
 });
