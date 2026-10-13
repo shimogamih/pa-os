@@ -1,422 +1,419 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PA-OS</title>
+  <meta name="theme-color" content="#0b1220">
+  <title>PA-OS | Portfolio AI</title>
 
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --bg: #0b1220;
+      --panel: #131e30;
+      --line: #293a52;
+      --gold: #d4af37;
+      --text: #edf2fa;
+      --muted: #9baac0;
+      --green: #65d6a1;
+      --red: #ff8585;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: #080c14;
-      color: #f4f4f4;
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Helvetica Neue",
-        sans-serif;
+      padding: 18px 14px 40px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
     }
 
-    .container {
+    main {
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: 20px;
+    }
+
+    header {
+      padding: 12px 0 20px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 20px;
     }
 
     h1 {
-      color: #d4af37;
-      margin-bottom: 4px;
-    }
-
-    h2 {
-      margin-top: 0;
+      margin: 0;
+      color: var(--gold);
+      font-size: 27px;
+      letter-spacing: 1px;
     }
 
     .subtitle {
-      color: #8f9aad;
-      margin-top: 0;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
     }
 
-    .card {
-      background: #111824;
-      border: 1px solid #283247;
-      border-radius: 16px;
-      padding: 18px;
-      margin-top: 16px;
+    h2 {
+      font-size: 17px;
+      margin: 0 0 14px;
+      color: var(--gold);
     }
 
-    .gold {
-      color: #d4af37;
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 18px;
     }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field { min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
 
     label {
       display: block;
-      margin-top: 12px;
-      margin-bottom: 6px;
-      color: #aeb7c7;
-      font-size: 14px;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
     }
 
     input {
       width: 100%;
-      padding: 13px;
-      border-radius: 10px;
-      border: 1px solid #354158;
-      background: #080d16;
-      color: white;
+      min-width: 0;
+      padding: 11px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0b1423;
+      color: var(--text);
       font-size: 16px;
     }
 
+    input:focus {
+      outline: 1px solid var(--gold);
+      border-color: var(--gold);
+    }
+
+    .help {
+      margin: 12px 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
     button {
-      border: 1px solid #d4af37;
-      background: #171d2a;
-      color: white;
-      border-radius: 10px;
-      padding: 13px 16px;
-      font-size: 16px;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #1b2b42;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
     }
 
     button.primary {
-      background: #4a3810;
+      width: 100%;
+      background: var(--gold);
+      color: #101521;
+      border-color: var(--gold);
+      margin-top: 12px;
+    }
+
+    button.secondary {
+      margin-top: 8px;
     }
 
     button.danger {
-      border-color: #7c3f46;
-      color: #ff9ca7;
-      padding: 8px 12px;
-      font-size: 13px;
+      background: #3b2029;
+      color: #ffaaaa;
+      font-size: 12px;
+      padding: 7px 10px;
     }
 
-    .button-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 16px;
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
+
+    .stat {
+      background: #0b1423;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 19px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .gold { color: var(--gold); }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
 
     .holding {
-      background: #0b111c;
-      border: 1px solid #293449;
-      border-radius: 12px;
-      padding: 14px;
-      margin-top: 12px;
+      background: #0b1423;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 13px;
+      margin-bottom: 10px;
+      overflow-wrap: anywhere;
     }
 
     .holding-header {
       display: flex;
+      align-items: flex-start;
       justify-content: space-between;
-      align-items: center;
       gap: 10px;
     }
 
     .holding-name {
       font-weight: bold;
-      font-size: 17px;
+      font-size: 16px;
     }
 
     .holding-code {
-      color: #d4af37;
-      font-size: 13px;
+      font-size: 12px;
+      color: var(--muted);
     }
 
     .holding-info {
-      color: #aeb7c7;
-      margin-top: 8px;
-      line-height: 1.7;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #cbd5e3;
+      line-height: 1.9;
     }
 
     .empty {
-      color: #7e899b;
       text-align: center;
-      padding: 20px 5px;
+      padding: 22px 8px;
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .success {
-      color: #76d99a;
+      color: var(--green);
+      font-size: 13px;
     }
 
-    .summary {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .summary-item {
-      background: #0b111c;
-      border-radius: 10px;
-      padding: 14px;
-    }
-
-    .summary-label {
-      color: #8994a7;
+    .warning {
+      color: #f2cc70;
       font-size: 12px;
     }
 
-    .summary-value {
-      margin-top: 5px;
-      font-size: 20px;
-      font-weight: bold;
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .score {
-      font-size: 30px;
+    .action-row button { flex: 1; }
+
+    .analysis-score {
+      font-size: 22px;
       font-weight: bold;
-      color: #d4af37;
+      color: var(--gold);
       margin-top: 10px;
     }
 
-    .score-good {
-      color: #76d99a;
-    }
-
-    .score-watch {
-      color: #f0c674;
-    }
-
-    .score-bad {
-      color: #ff7b7b;
-    }
-
-    .metric {
-      margin-top: 12px;
-    }
-
-    .metric-header {
-      display: flex;
-      justify-content: space-between;
-      color: #aeb7c7;
-      font-size: 14px;
-    }
-
     .bar {
-      height: 8px;
-      background: #222c3c;
-      border-radius: 10px;
+      height: 7px;
+      background: #293449;
+      border-radius: 8px;
       overflow: hidden;
-      margin-top: 5px;
+      margin: 5px 0 12px;
     }
 
-    .bar-inner {
+    .bar-fill {
       height: 100%;
-      background: #d4af37;
+      background: var(--gold);
+      width: 0;
     }
 
-    .hidden {
-      display: none;
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 14px 0;
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 12px 9px 30px; }
+      .panel { padding: 12px; }
+      .stat-value { font-size: 16px; }
+      .form-grid { gap: 9px; }
     }
   </style>
 </head>
 
 <body>
+<main>
 
-<div class="container">
+  <header>
+    <h1>⚔ PA-OS</h1>
+    <div class="subtitle">PORTFOLIO AI OPERATING SYSTEM</div>
+    <div class="subtitle">あなたの資産ギルドを管理する</div>
+  </header>
 
-  <h1>PA-OS</h1>
+  <section class="panel">
+    <h2>🏰 ポートフォリオ台帳</h2>
 
-  <p class="subtitle">
-    Portfolio AI Operating System
-  </p>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">保有銘柄数</div>
+        <div class="stat-value" id="total-holdings">0</div>
+      </div>
 
+      <div class="stat">
+        <div class="stat-label">投資元本</div>
+        <div class="stat-value" id="total-cost">¥0</div>
+      </div>
+    </div>
+  </section>
 
-  <!-- 銘柄入力 -->
+  <section class="panel">
+    <h2>📜 銘柄を登録する</h2>
 
-  <div class="card">
+    <div class="form-grid">
 
-    <h2>
-      <span class="gold">Portfolio Ledger</span>
-    </h2>
+      <div class="field full">
+        <label for="stock-name">銘柄名</label>
+        <input id="stock-name" type="text"
+          placeholder="例：トヨタ自動車">
+      </div>
 
-    <p class="subtitle">
-      保有銘柄を登録します。
+      <div class="field">
+        <label for="stock-code">銘柄コード</label>
+        <input id="stock-code" type="text"
+          placeholder="例：7203">
+      </div>
+
+      <div class="field">
+        <label for="stock-shares">保有株数・口数</label>
+        <input id="stock-shares" type="number"
+          min="0" step="any" placeholder="100">
+      </div>
+
+      <div class="field">
+        <label for="stock-cost">取得単価（円）</label>
+        <input id="stock-cost" type="number"
+          min="0" step="any" placeholder="2500">
+      </div>
+
+      <div class="field">
+        <label for="stock-current">現在株価・基準価額（円）</label>
+        <input id="stock-current" type="number"
+          min="0" step="any" placeholder="未入力でも可">
+      </div>
+
+      <div class="field">
+        <label for="stock-dividend">配当利回り（%）</label>
+        <input id="stock-dividend" type="number"
+          min="0" step="any" placeholder="未入力でも可">
+      </div>
+
+      <div class="field">
+        <label for="stock-per">PER</label>
+        <input id="stock-per" type="number"
+          min="0" step="any" placeholder="未入力でも可">
+      </div>
+
+      <div class="field">
+        <label for="stock-pbr">PBR</label>
+        <input id="stock-pbr" type="number"
+          min="0" step="any" placeholder="未入力でも可">
+      </div>
+
+      <div class="field">
+        <label for="stock-equity">自己資本比率（%）</label>
+        <input id="stock-equity" type="number"
+          min="0" max="100" step="any"
+          placeholder="未入力でも可">
+      </div>
+
+      <div class="field">
+        <label for="stock-growth">売上成長率（%）</label>
+        <input id="stock-growth" type="number"
+          step="any" placeholder="未入力でも可">
+      </div>
+
+    </div>
+
+    <p class="help">
+      ※ 現在株価や財務データは、確認できた数値を入力してください。
+      空欄はデータ不足として扱います。
     </p>
 
-    <label for="stock-name">銘柄名</label>
-
-    <input
-      id="stock-name"
-      type="text"
-      placeholder="例：四国電力"
-    >
-
-    <label for="stock-code">銘柄コード</label>
-
-    <input
-      id="stock-code"
-      type="text"
-      inputmode="numeric"
-      placeholder="例：9507"
-    >
-
-    <label for="stock-shares">保有株数</label>
-
-    <input
-      id="stock-shares"
-      type="number"
-      inputmode="numeric"
-      min="1"
-      placeholder="例：100"
-    >
-
-    <label for="stock-cost">取得単価</label>
-
-    <input
-      id="stock-cost"
-      type="number"
-      inputmode="decimal"
-      min="0"
-      step="0.01"
-      placeholder="例：1200"
-    >
-
-    <div class="button-row">
-
-      <button
-        id="add-stock-btn"
-        class="primary"
-        type="button"
-      >
-        ＋ 銘柄を追加
+    <div class="action-row">
+      <button id="add-stock-btn" class="primary">
+        ＋ 台帳に登録
       </button>
-
-      <button
-        id="clear-form-btn"
-        type="button"
-      >
-        入力をクリア
+      <button id="clear-form-btn" class="secondary">
+        入力クリア
       </button>
-
     </div>
 
-    <div id="save-status"></div>
+    <div id="save-status" aria-live="polite"></div>
+  </section>
 
-  </div>
-
-
-  <!-- サマリー -->
-
-  <div class="card">
-
-    <h2>現在のポートフォリオ</h2>
-
-    <div class="summary">
-
-      <div class="summary-item">
-
-        <div class="summary-label">
-          銘柄数
-        </div>
-
-        <div
-          id="total-holdings"
-          class="summary-value"
-        >
-          0
-        </div>
-
-      </div>
-
-      <div class="summary-item">
-
-        <div class="summary-label">
-          投資元本
-        </div>
-
-        <div
-          id="total-cost"
-          class="summary-value"
-        >
-          ¥0
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- 保有銘柄 -->
-
-  <div class="card">
-
-    <h2>保有銘柄</h2>
+  <section class="panel">
+    <h2>📊 保有資産一覧</h2>
 
     <div id="holdings-list">
-
-      <div class="empty">
-        まだ銘柄が登録されていません。
-      </div>
-
+      <div class="empty">台帳を読み込み中...</div>
     </div>
 
-  </div>
-
-
-  <!-- テスト -->
-
-  <div class="card">
-
-    <h2>PA-OSテスト</h2>
-
-    <div class="button-row">
-
-      <button
-        id="reload-btn"
-        type="button"
-      >
-        台帳を再読み込み
+    <div class="action-row">
+      <button id="reload-btn">↻ 台帳再読み込み</button>
+      <button id="delete-all-btn" class="danger">
+        全銘柄削除
       </button>
-
-      <button
-        id="delete-all-btn"
-        class="danger"
-        type="button"
-      >
-        全銘柄を削除
-      </button>
-
     </div>
 
-    <p id="test-status"></p>
+    <p id="test-status" class="success" aria-live="polite"></p>
+  </section>
 
-  </div>
+  <section class="panel">
+    <h2>⚔ PA-OS ポートフォリオ分析</h2>
 
-
-  <!-- AI分析 -->
-
-  <div class="card">
-
-    <h2>
-      <span class="gold">AIポートフォリオ分析</span>
-    </h2>
-
-    <p class="subtitle">
-      PA-OS独自100点評価エンジン
+    <p class="help">
+      登録した情報を使って、保有資産の損益と評価を計算します。
+      未入力の項目は推測で採点しません。
     </p>
 
-    <button
-      id="ai-analysis-btn"
-      class="primary"
-      type="button"
-    >
-      🤖 PA-OSで分析する
+    <button id="ai-analysis-btn" class="primary">
+      ポートフォリオAI起動
     </button>
 
-    <div id="ai-analysis-result"></div>
+    <div id="ai-analysis-result" style="margin-top:16px;">
+      <div class="empty">
+        AI起動ボタンを押すと分析結果を表示します。
+      </div>
+    </div>
+  </section>
 
-  </div>
+  <footer>
+    PA-OS · Portfolio AI Operating System<br>
+    分析結果は入力データに基づく参考情報です。
+  </footer>
 
-</div>
+</main>
 
-
-<script src="script.js?v=4"></script>
-
+<script src="script.js?v=5"></script>
 </body>
 </html>
