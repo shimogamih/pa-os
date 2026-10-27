@@ -1,11 +1,12 @@
-
 const STORAGE_KEY = "pa_os_portfolio_ledger";
 let editingIndex = null;
 
 const $ = id => document.getElementById(id);
 
 function num(value) {
-  if (value === null || value === undefined || String(value).trim() === "") return null;
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return null;
+  }
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -24,63 +25,98 @@ function saveLedger(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     return true;
   } catch (error) {
-    alert("台帳を保存できませんでした。");
+    alert("保存できませんでした。ブラウザの設定を確認してください。");
     console.error(error);
     return false;
   }
 }
 
-function money(value) {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "未入力";
-  return Number(value).toLocaleString("ja-JP", { maximumFractionDigits: 2 }) + "円";
+function getType() {
+  return $("stock-type")?.value || "stock";
 }
 
-function signedMoney(value) {
-  if (value === null || !Number.isFinite(Number(value))) return "未計算";
-  const n = Number(value);
-  return (n > 0 ? "+" : "") + money(n);
+function isFund(item) {
+  return item.type === "fund";
 }
 
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[c]);
+/*
+  株・ETF：
+  保有数 × 1株あたりの価格
+
+  投資信託：
+  保有口数 ÷ 10,000 × 1万口あたりの基準価額
+*/
+
+function calculateAmounts(item) {
+  const shares = num(item.shares);
+  const cost = num(item.cost);
+  const current = num(item.current);
+  const divisor = isFund(item) ? 10000 : 1;
+
+  const costTotal =
+    shares !== null && cost !== null
+      ? shares / divisor * cost
+      : null;
+
+  const value =
+    shares !== null && current !== null
+      ? shares / divisor * current
+      : null;
+
+  const profit =
+    costTotal !== null && value !== null
+      ? value - costTotal
+      : null;
+
+  const profitRate =
+    costTotal !== null && costTotal > 0 && profit !== null
+      ? profit / costTotal * 100
+      : null;
+
+  return { costTotal, value, profit, profitRate };
 }
 
 function getFormData() {
-  const name = $("stock-name").value.trim();
+  const name = $("stock-name")?.value.trim();
+
   if (!name) {
     alert("銘柄名を入力してください。");
     return null;
   }
 
   const item = {
-    type: $("stock-type").value,
+    type: getType(),
     name,
-    code: $("stock-code").value.trim(),
-    shares: num($("stock-shares").value),
-    cost: num($("stock-cost").value),
-    current: num($("stock-current").value),
-    dividend: num($("stock-dividend").value),
-    per: num($("stock-per").value),
-    pbr: num($("stock-pbr").value),
-    equity: num($("stock-equity").value),
-    growth: num($("stock-growth").value),
-    stability: num($("stock-stability").value),
-    risk: num($("stock-risk").value),
+    code: $("stock-code")?.value.trim() || "",
+    shares: num($("stock-shares")?.value),
+    cost: num($("stock-cost")?.value),
+    current: num($("stock-current")?.value),
+    dividend: num($("stock-dividend")?.value),
+    per: num($("stock-per")?.value),
+    pbr: num($("stock-pbr")?.value),
+    equity: num($("stock-equity")?.value),
+    growth: num($("stock-growth")?.value),
+    stability: num($("stock-stability")?.value),
+    risk: num($("stock-risk")?.value),
     updatedAt: new Date().toISOString()
   };
 
   if (item.shares !== null && item.shares < 0) {
-    alert("保有数は0以上にしてください。");
+    alert("保有数・口数は0以上で入力してください。");
     return null;
   }
 
-  for (const key of ["cost", "current", "dividend", "per", "pbr"]) {
-    if (item[key] !== null && item[key] < 0) {
-      alert("価格・配当利回り・PER・PBRは0以上で入力してください。");
-      return null;
-    }
+  if (
+    (item.cost !== null && item.cost < 0) ||
+    (item.current !== null && item.current < 0)
+  ) {
+    alert("取得単価・現在値は0以上で入力してください。");
+    return null;
+  }
+
+  if (item.dividend !== null && item.dividend < 0) {
+    alert("配当利回りは0以上で入力してください。");
+    return null;
   }
 
   for (const [label, value] of [
@@ -89,7 +125,7 @@ function getFormData() {
     ["リスク水準", item.risk]
   ]) {
     if (value !== null && (value < 0 || value > 100)) {
-      alert(label + "は0〜100で入力してください。");
+      alert(`${label}は0〜100で入力してください。`);
       return null;
     }
   }
@@ -99,20 +135,36 @@ function getFormData() {
 
 function resetForm() {
   [
-    "stock-name", "stock-code", "stock-shares", "stock-cost",
-    "stock-current", "stock-dividend", "stock-per", "stock-pbr",
-    "stock-equity", "stock-growth", "stock-stability", "stock-risk"
-  ].forEach(id => { if ($(id)) $(id).value = ""; });
+    "stock-name",
+    "stock-code",
+    "stock-shares",
+    "stock-cost",
+    "stock-current",
+    "stock-dividend",
+    "stock-per",
+    "stock-pbr",
+    "stock-equity",
+    "stock-growth",
+    "stock-stability",
+    "stock-risk"
+  ].forEach(id => {
+    if ($(id)) $(id).value = "";
+  });
 
-  $("stock-type").value = "stock";
+  if ($("stock-type")) $("stock-type").value = "stock";
+
   editingIndex = null;
-  $("add-stock-btn").textContent = "＋ 台帳に登録";
-  $("save-status").textContent = "入力待ち";
+
+  if ($("add-stock-btn")) {
+    $("add-stock-btn").textContent = "＋ 台帳に登録";
+  }
+
+  if ($("save-status")) {
+    $("save-status").textContent = "入力待ち";
+  }
 }
 
-function saveHolding(event) {
-  if (event) event.preventDefault();
-
+function saveHolding() {
   const item = getFormData();
   if (!item) return;
 
@@ -123,13 +175,16 @@ function saveHolding(event) {
     data.push(item);
   } else {
     const old = data[editingIndex];
+
     if (!old) {
+      editingIndex = null;
       alert("編集対象が見つかりません。");
-      resetForm();
       return;
     }
+
     data[editingIndex] = {
-      ...old, ...item,
+      ...old,
+      ...item,
       createdAt: old.createdAt || item.createdAt
     };
   }
@@ -138,7 +193,10 @@ function saveHolding(event) {
 
   resetForm();
   render();
-  $("save-status").textContent = "保存しました";
+
+  if ($("save-status")) {
+    $("save-status").textContent = "保存しました";
+  }
 }
 
 function startEdit(index) {
@@ -146,6 +204,7 @@ function startEdit(index) {
   if (!item) return;
 
   const fields = {
+    "stock-type": item.type || "stock",
     "stock-name": item.name,
     "stock-code": item.code,
     "stock-shares": item.shares,
@@ -161,89 +220,233 @@ function startEdit(index) {
   };
 
   Object.entries(fields).forEach(([id, value]) => {
-    $(id).value = value ?? "";
+    if ($(id)) $(id).value = value ?? "";
   });
 
-  $("stock-type").value = ["stock", "etf", "fund"].includes(item.type)
-    ? item.type : "stock";
-
   editingIndex = index;
-  $("add-stock-btn").textContent = "変更を保存";
-  $("save-status").textContent = "編集中";
-  $("stock-name").scrollIntoView({ behavior: "smooth", block: "center" });
+
+  if ($("add-stock-btn")) {
+    $("add-stock-btn").textContent = "変更を保存";
+  }
+
+  if ($("save-status")) {
+    $("save-status").textContent = "編集中";
+  }
+
+  $("stock-name")?.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
 }
 
 function deleteHolding(index) {
   const data = readLedger();
   if (!data[index]) return;
-  if (!confirm(data[index].name + " を削除しますか？")) return;
+
+  if (!confirm(`${data[index].name} を削除しますか？`)) return;
 
   data.splice(index, 1);
+
   if (!saveLedger(data)) return;
 
-  if (editingIndex === index) resetForm();
-  else if (editingIndex !== null && editingIndex > index) editingIndex--;
+  if (editingIndex === index) {
+    resetForm();
+  } else if (editingIndex !== null && editingIndex > index) {
+    editingIndex--;
+  }
 
   render();
 }
 
-function analyzeStock(stock) {
-  // 投資信託には株式のPER・PBR等を適用しない
-  const isFund = stock.type === "fund";
+function analyzeStock(item) {
   let score = 0;
-  let maxScore = 0;
+  let availablePoints = 0;
   const details = [];
 
-  function add(label, value, max, calc) {
+  function addScore(label, value, max, calculate) {
     if (value === null || value === undefined || value === "") {
-      details.push(label + "：データ不足");
+      details.push(`${label}：データ不足`);
       return;
     }
-    const v = Number(value);
-    if (!Number.isFinite(v)) {
-      details.push(label + "：データ不足");
-      return;
-    }
-    const points = Math.max(0, Math.min(max, calc(v)));
+
+    const points = Math.max(
+      0,
+      Math.min(max, calculate(Number(value)))
+    );
+
     score += points;
-    maxScore += max;
+    availablePoints += max;
+
     details.push(`${label}：${points.toFixed(1)} / ${max}点`);
   }
 
-  if (isFund) {
-    details.push("投資信託：株式向けPER・PBR・自己資本比率評価は対象外");
-    add("取得価格との比較", num(stock.current) !== null &&
-      num(stock.cost) !== null && num(stock.cost) > 0
-      ? num(stock.current) / num(stock.cost) * 100 : null,
-      40, v => v >= 80 && v <= 120 ? 40 : v >= 60 && v <= 140 ? 30 : 15);
-    add("リターン情報", num(stock.growth), 30,
-      v => v >= 15 ? 30 : v >= 8 ? 24 : v >= 0 ? 15 : 3);
-    add("リスク水準", num(stock.risk), 30, v => (100 - v) * 0.3);
+  if (isFund(item)) {
+    addScore(
+      "成長性",
+      num(item.growth),
+      25,
+      v => v >= 20 ? 25 :
+           v >= 10 ? 21 :
+           v >= 5 ? 17 :
+           v >= 0 ? 12 : 3
+    );
+
+    addScore(
+      "運用安定度",
+      num(item.stability),
+      25,
+      v => v * 0.25
+    );
+
+    addScore(
+      "リスク評価",
+      num(item.risk),
+      25,
+      v => (100 - v) * 0.25
+    );
+
+    const current = num(item.current);
+    const cost = num(item.cost);
+
+    const pricePosition =
+      current !== null && cost !== null && cost > 0
+        ? current / cost * 100
+        : null;
+
+    addScore(
+      "取得価格との位置",
+      pricePosition,
+      25,
+      v => v >= 80 && v <= 120 ? 25 :
+           v >= 60 && v <= 140 ? 18 :
+           v >= 40 && v <= 160 ? 10 : 3
+    );
   } else {
-    add("配当利回り", num(stock.dividend), 20,
-      v => v >= 4 ? 20 : v >= 3 ? 16 : v >= 2 ? 12 : v >= 1 ? 7 : 2);
-    add("自己資本比率", num(stock.equity), 20,
-      v => v >= 70 ? 20 : v >= 50 ? 17 : v >= 40 ? 14 : v >= 30 ? 10 : v >= 20 ? 6 : 2);
-    add("売上成長率", num(stock.growth), 15,
-      v => v >= 20 ? 15 : v >= 10 ? 12 : v >= 5 ? 9 : v >= 0 ? 6 : 1);
-    add("PER", num(stock.per), 8,
-      v => v <= 0 ? 0 : v <= 10 ? 8 : v <= 15 ? 7 : v <= 20 ? 5 : v <= 30 ? 3 : 1);
-    add("PBR", num(stock.pbr), 7,
-      v => v <= 0 ? 0 : v <= 1 ? 7 : v <= 1.5 ? 6 : v <= 2 ? 4 : v <= 3 ? 2 : 1);
-    add("業績安定度", num(stock.stability), 15, v => v * 0.15);
-    const current = num(stock.current);
-    const cost = num(stock.cost);
-    add("取得価格との比較",
-      current !== null && cost !== null && cost > 0 ? current / cost * 100 : null,
-      10, v => v >= 80 && v <= 120 ? 10 : v >= 60 && v <= 140 ? 7 : v >= 40 && v <= 160 ? 4 : 1);
-    add("リスク評価", num(stock.risk), 5, v => (100 - v) * 0.05);
+    addScore(
+      "配当利回り",
+      num(item.dividend),
+      20,
+      v => v >= 4 ? 20 :
+           v >= 3 ? 16 :
+           v >= 2 ? 12 :
+           v >= 1 ? 7 : 2
+    );
+
+    addScore(
+      "自己資本比率",
+      num(item.equity),
+      20,
+      v => v >= 70 ? 20 :
+           v >= 50 ? 17 :
+           v >= 40 ? 14 :
+           v >= 30 ? 10 :
+           v >= 20 ? 6 : 2
+    );
+
+    addScore(
+      "成長性",
+      num(item.growth),
+      15,
+      v => v >= 20 ? 15 :
+           v >= 10 ? 12 :
+           v >= 5 ? 9 :
+           v >= 0 ? 6 : 1
+    );
+
+    addScore(
+      "PER",
+      num(item.per),
+      8,
+      v => v <= 0 ? 0 :
+           v <= 10 ? 8 :
+           v <= 15 ? 7 :
+           v <= 20 ? 5 :
+           v <= 30 ? 3 : 1
+    );
+
+    addScore(
+      "PBR",
+      num(item.pbr),
+      7,
+      v => v <= 0 ? 0 :
+           v <= 1 ? 7 :
+           v <= 1.5 ? 6 :
+           v <= 2 ? 4 :
+           v <= 3 ? 2 : 1
+    );
+
+    addScore(
+      "業績安定度",
+      num(item.stability),
+      15,
+      v => v * 0.15
+    );
+
+    const current = num(item.current);
+    const cost = num(item.cost);
+
+    const pricePosition =
+      current !== null && cost !== null && cost > 0
+        ? current / cost * 100
+        : null;
+
+    addScore(
+      "取得価格との位置",
+      pricePosition,
+      10,
+      v => v >= 80 && v <= 120 ? 10 :
+           v >= 60 && v <= 140 ? 7 :
+           v >= 40 && v <= 160 ? 4 : 1
+    );
+
+    addScore(
+      "リスク評価",
+      num(item.risk),
+      5,
+      v => (100 - v) * 0.05
+    );
   }
 
   return {
     score: Math.round(score * 10) / 10,
-    maxScore,
+    availablePoints,
     details
   };
+}
+
+function money(value) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+    return "未入力";
+  }
+
+  return Number(value).toLocaleString("ja-JP", {
+    maximumFractionDigits: 2
+  }) + "円";
+}
+
+function signedMoney(value) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+    return "未計算";
+  }
+
+  const n = Number(value);
+  return `${n > 0 ? "+" : ""}${money(n)}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function typeLabel(item) {
+  if (item.type === "fund") return "投資信託";
+  if (item.type === "etf") return "ETF";
+  return "株式";
 }
 
 function render() {
@@ -252,118 +455,192 @@ function render() {
 
   let totalCost = 0;
   let totalValue = 0;
-  let totalProfit = 0;
+  let profitTotal = 0;
+
   let costCount = 0;
   let valueCount = 0;
   let profitCount = 0;
 
-  list.innerHTML = "";
+  if (list) {
+    list.innerHTML = "";
 
-  if (data.length === 0) {
-    list.innerHTML = "<p>まだ資産が登録されていません。</p>";
+    if (data.length === 0) {
+      list.innerHTML = "<p>まだ銘柄が登録されていません。</p>";
+    }
+
+    data.forEach((item, index) => {
+      const amounts = calculateAmounts(item);
+      const analysis = analyzeStock(item);
+
+      const shares = num(item.shares);
+      const cost = num(item.cost);
+      const current = num(item.current);
+
+      if (amounts.costTotal !== null) {
+        totalCost += amounts.costTotal;
+        costCount++;
+      }
+
+      if (amounts.value !== null) {
+        totalValue += amounts.value;
+        valueCount++;
+      }
+
+      if (amounts.profit !== null) {
+        profitTotal += amounts.profit;
+        profitCount++;
+      }
+
+      const profitClass =
+        amounts.profit === null ? "" :
+        amounts.profit >= 0 ? "positive" : "negative";
+
+      const unitLabel = isFund(item) ? "口" : "株・口";
+      const priceLabel = isFund(item)
+        ? "1万口あたり基準価額"
+        : "単価";
+
+      const card = document.createElement("div");
+      card.className = "holding";
+
+      card.innerHTML = `
+        <div class="holding-header">
+          <div>
+            <div class="holding-name">
+              ${escapeHtml(item.name || "名称未設定")}
+            </div>
+            <div class="holding-code">
+              ${escapeHtml(typeLabel(item))}
+              ${item.code ? " / " + escapeHtml(item.code) : ""}
+            </div>
+          </div>
+          <div class="analysis-score">
+            評価 ${analysis.score.toFixed(1)}点
+            <br>
+            <small>採点可能 ${analysis.availablePoints}点分</small>
+          </div>
+        </div>
+
+        <div class="holding-info">
+          保有数：${shares === null ? "未入力" : shares.toLocaleString("ja-JP") + unitLabel}
+          <br>
+          取得${priceLabel}：${money(cost)}
+          <br>
+          現在${priceLabel}：${money(current)}
+          <br>
+          投資元本：${money(amounts.costTotal)}
+          <br>
+          評価額：${money(amounts.value)}
+          <br>
+          含み損益：
+          <span class="${profitClass}">
+            ${signedMoney(amounts.profit)}
+          </span>
+          <br>
+          損益率：
+          ${amounts.profitRate === null
+            ? "未計算"
+            : `${amounts.profitRate >= 0 ? "+" : ""}${amounts.profitRate.toFixed(2)}%`}
+        </div>
+
+        <div class="holding-info">
+          ${analysis.details.map(escapeHtml).join("<br>")}
+        </div>
+
+        <div class="holding-actions">
+          <button type="button" data-edit="${index}">編集</button>
+          <button type="button" data-delete="${index}">削除</button>
+        </div>
+      `;
+
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll("[data-edit]").forEach(button => {
+      button.addEventListener("click", () => {
+        startEdit(Number(button.dataset.edit));
+      });
+    });
+
+    list.querySelectorAll("[data-delete]").forEach(button => {
+      button.addEventListener("click", () => {
+        deleteHolding(Number(button.dataset.delete));
+      });
+    });
   }
 
-  data.forEach((stock, index) => {
-    const shares = num(stock.shares);
-    const cost = num(stock.cost);
-    const current = num(stock.current);
+  if ($("total-holdings")) {
+    $("total-holdings").textContent = data.length;
+  }
 
-    // 投資信託の口数は通常1万口単位の基準価額で表示されるため、
-    // 現段階では「口数×基準価額」ではなく、入力単位に従って計算する。
-    const value = shares !== null && current !== null ? shares * current : null;
-    const costTotal = shares !== null && cost !== null ? shares * cost : null;
-    const profit = value !== null && costTotal !== null ? value - costTotal : null;
-    const rate = profit !== null && costTotal > 0 ? profit / costTotal * 100 : null;
+  if ($("total-cost")) {
+    $("total-cost").textContent = money(totalCost);
+  }
 
-    if (costTotal !== null) { totalCost += costTotal; costCount++; }
-    if (value !== null) { totalValue += value; valueCount++; }
-    if (profit !== null) { totalProfit += profit; profitCount++; }
+  if ($("portfolio-value")) {
+    $("portfolio-value").textContent =
+      valueCount ? money(totalValue) : "未入力";
+  }
 
-    const analysis = analyzeStock(stock);
-    const typeName = { stock: "個別株", etf: "ETF", fund: "投資信託" }[stock.type] || "個別株";
-    const card = document.createElement("article");
-    card.className = "holding";
+  if ($("open-pl")) {
+    $("open-pl").textContent =
+      profitCount ? signedMoney(profitTotal) : "未計算";
+  }
 
-    card.innerHTML = `
-      <div class="holding-header">
-        <div>
-          <div class="holding-name">${escapeHtml(stock.name || "名称未設定")}</div>
-          <div class="holding-code">${escapeHtml(typeName)} / ${escapeHtml(stock.code || "コード未入力")}</div>
-        </div>
-        <div class="analysis-score">評価 ${analysis.score} / ${analysis.maxScore}点</div>
-      </div>
-      <div class="holding-info">
-        保有数・口数：${shares ?? "未入力"}<br>
-        取得単価・基準価額：${money(cost)}<br>
-        現在値・基準価額：${money(current)}<br>
-        投資元本：${money(costTotal)}<br>
-        評価額：${money(value)}<br>
-        含み損益：<span class="${profit === null ? "" : profit >= 0 ? "positive" : "negative"}">${signedMoney(profit)}</span><br>
-        損益率：${rate === null ? "未計算" : (rate >= 0 ? "+" : "") + rate.toFixed(2) + "%"}<br>
-        配当利回り：${num(stock.dividend) === null ? "未入力" : stock.dividend + "%"}
-      </div>
-      <div class="holding-info">${analysis.details.map(escapeHtml).join("<br>")}</div>
-      <div class="pa-actions">
-        <button class="pa-btn secondary" type="button" data-edit="${index}">編集</button>
-        <button class="pa-btn secondary" type="button" data-delete="${index}">削除</button>
-      </div>
+  if ($("portfolio-return")) {
+    $("portfolio-return").textContent =
+      totalCost > 0 && profitCount === data.length && data.length > 0
+        ? `${profitTotal / totalCost >= 0 ? "+" : ""}${(profitTotal / totalCost * 100).toFixed(2)}%`
+        : "未計算";
+  }
+
+  if ($("data-status")) {
+    $("data-status").textContent =
+      `登録 ${data.length}件 / 取得額計算 ${costCount}件 / 評価額計算 ${valueCount}件`;
+  }
+
+  const result = $("ai-analysis-result");
+
+  if (result) {
+    const profitRate =
+      totalCost > 0 && profitCount === data.length && data.length > 0
+        ? profitTotal / totalCost * 100
+        : null;
+
+    result.innerHTML = `
+      <h3>PA-OS ポートフォリオ分析</h3>
+      <p>登録銘柄数：${data.length}</p>
+      <p>投資元本合計：${money(totalCost)}${costCount < data.length ? "（一部未入力）" : ""}</p>
+      <p>現在評価額合計：${valueCount ? money(totalValue) : "現在値を入力してください"}${valueCount < data.length ? "（一部未入力）" : ""}</p>
+      <p>含み損益合計：${profitCount ? signedMoney(profitTotal) : "計算に必要なデータがありません"}${profitCount < data.length ? "（計算可能な銘柄分）" : ""}</p>
+      <p>損益率：${profitRate === null ? "全銘柄のデータがそろうと計算できます" : `${profitRate >= 0 ? "+" : ""}${profitRate.toFixed(2)}%`}</p>
+      <p>投資信託は「保有口数」と「1万口あたりの基準価額」を入力して計算します。</p>
+      <p>評価は入力データに基づく暫定評価です。将来の利益を保証するものではありません。</p>
     `;
+  }
 
-    list.appendChild(card);
-  });
-
-  list.querySelectorAll("[data-edit]").forEach(button => {
-    button.addEventListener("click", () => startEdit(Number(button.dataset.edit)));
-  });
-  list.querySelectorAll("[data-delete]").forEach(button => {
-    button.addEventListener("click", () => deleteHolding(Number(button.dataset.delete)));
-  });
-
-  $("total-holdings").textContent = data.length;
-  $("total-cost").textContent = money(totalCost);
-  $("portfolio-value").textContent = valueCount ? money(totalValue) : "未計算";
-  $("open-pl").textContent = profitCount ? signedMoney(totalProfit) : "未計算";
-
-  $("open-pl").className = profitCount
-    ? totalProfit >= 0 ? "positive" : "negative"
-    : "";
-
-  $("portfolio-return").textContent =
-    costCount === data.length && profitCount === data.length &&
-    data.length > 0 && totalCost > 0
-      ? (totalProfit >= 0 ? "+" : "") + (totalProfit / totalCost * 100).toFixed(2) + "%"
-      : "データ不足";
-
-  $("data-status").textContent =
-    data.length === 0 ? "入力待ち" :
-    valueCount < data.length ? "現在値が一部不足" : "現在値入力済み";
-
-  $("ai-analysis-result").innerHTML = `
-    <h3>ポートフォリオ分析</h3>
-    <p>登録資産数：${data.length}</p>
-    <p>投資元本：${money(totalCost)}${costCount < data.length ? "（一部不足）" : ""}</p>
-    <p>現在評価額：${valueCount ? money(totalValue) : "現在値を入力してください"}</p>
-    <p>含み損益：${profitCount ? signedMoney(totalProfit) : "計算データ不足"}</p>
-    <p>100点評価は入力済みデータのみで計算します。データが不足する場合は満点を分母にせず、採点可能点を表示します。</p>
-    <p>現在値は手入力です。最新株価を自動取得していません。</p>
-  `;
-
-  $("test-status").textContent = "✓ PA-OS起動完了";
+  if ($("test-status")) {
+    $("test-status").textContent = "✓ PA-OS起動完了";
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  $("holding-form").addEventListener("submit", saveHolding);
-  $("clear-form-btn").addEventListener("click", resetForm);
-  $("reload-btn").addEventListener("click", render);
-  $("ai-analysis-btn").addEventListener("click", render);
+  $("add-stock-btn")?.addEventListener("click", saveHolding);
+  $("clear-form-btn")?.addEventListener("click", resetForm);
+  $("reload-btn")?.addEventListener("click", render);
 
-  $("delete-all-btn").addEventListener("click", () => {
-    if (!confirm("台帳をすべて削除しますか？この操作は取り消せません。")) return;
-    if (saveLedger([])) {
-      resetForm();
-      render();
+  $("delete-all-btn")?.addEventListener("click", () => {
+    if (!confirm("登録済みの台帳をすべて削除しますか？この操作は取り消せません。")) {
+      return;
     }
+
+    if (!saveLedger([])) return;
+
+    resetForm();
+    render();
   });
+
+  $("ai-analysis-btn")?.addEventListener("click", render);
 
   render();
 });
