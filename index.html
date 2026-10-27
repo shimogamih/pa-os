@@ -1,419 +1,151 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>PA-OS | Portfolio AI</title>
-
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --bg: #0b1220;
-      --panel: #131e30;
-      --line: #293a52;
-      --gold: #d4af37;
-      --text: #edf2fa;
-      --muted: #9baac0;
-      --green: #65d6a1;
-      --red: #ff8585;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 18px 14px 40px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.6;
-    }
-
-    main {
-      width: 100%;
-      max-width: 760px;
-      margin: 0 auto;
-    }
-
-    header {
-      padding: 12px 0 20px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      margin: 0;
-      color: var(--gold);
-      font-size: 27px;
-      letter-spacing: 1px;
-    }
-
-    .subtitle {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    h2 {
-      font-size: 17px;
-      margin: 0 0 14px;
-      color: var(--gold);
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 18px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .field { min-width: 0; }
-    .field.full { grid-column: 1 / -1; }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    input {
-      width: 100%;
-      min-width: 0;
-      padding: 11px 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #0b1423;
-      color: var(--text);
-      font-size: 16px;
-    }
-
-    input:focus {
-      outline: 1px solid var(--gold);
-      border-color: var(--gold);
-    }
-
-    .help {
-      margin: 12px 0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    button {
-      padding: 11px 14px;
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      background: #1b2b42;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    button.primary {
-      width: 100%;
-      background: var(--gold);
-      color: #101521;
-      border-color: var(--gold);
-      margin-top: 12px;
-    }
-
-    button.secondary {
-      margin-top: 8px;
-    }
-
-    button.danger {
-      background: #3b2029;
-      color: #ffaaaa;
-      font-size: 12px;
-      padding: 7px 10px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .stat {
-      background: #0b1423;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      min-width: 0;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .stat-value {
-      font-size: 19px;
-      font-weight: bold;
-      overflow-wrap: anywhere;
-    }
-
-    .gold { color: var(--gold); }
-    .positive { color: var(--green); }
-    .negative { color: var(--red); }
-
-    .holding {
-      background: #0b1423;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 13px;
-      margin-bottom: 10px;
-      overflow-wrap: anywhere;
-    }
-
-    .holding-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .holding-name {
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .holding-code {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .holding-info {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #cbd5e3;
-      line-height: 1.9;
-    }
-
-    .empty {
-      text-align: center;
-      padding: 22px 8px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .success {
-      color: var(--green);
-      font-size: 13px;
-    }
-
-    .warning {
-      color: #f2cc70;
-      font-size: 12px;
-    }
-
-    .action-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .action-row button { flex: 1; }
-
-    .analysis-score {
-      font-size: 22px;
-      font-weight: bold;
-      color: var(--gold);
-      margin-top: 10px;
-    }
-
-    .bar {
-      height: 7px;
-      background: #293449;
-      border-radius: 8px;
-      overflow: hidden;
-      margin: 5px 0 12px;
-    }
-
-    .bar-fill {
-      height: 100%;
-      background: var(--gold);
-      width: 0;
-    }
-
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 11px;
-      padding: 14px 0;
-    }
-
-    @media (max-width: 380px) {
-      body { padding: 12px 9px 30px; }
-      .panel { padding: 12px; }
-      .stat-value { font-size: 16px; }
-      .form-grid { gap: 9px; }
-    }
+    body { background:#0b1220; color:#edf2f7; }
+    .pa-wrap { max-width:850px; margin:auto; padding:16px; }
+    .pa-panel { background:#131e30; border:1px solid #34445c; border-radius:14px; padding:16px; margin:14px 0; }
+    .pa-panel h2 { color:#d4af37; margin-top:0; }
+    .pa-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .pa-form label { display:block; font-size:13px; margin-bottom:5px; color:#cbd5e1; }
+    .pa-form input,.pa-form select { box-sizing:border-box; width:100%; min-width:0; padding:11px; border-radius:8px; border:1px solid #46566e; background:#0b1220; color:white; font-size:16px; }
+    .pa-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .pa-btn { border:1px solid #d4af37; border-radius:9px; padding:11px 14px; background:#d4af37; color:#101827; font-weight:bold; cursor:pointer; }
+    .pa-btn.secondary { background:#202d42; color:#edf2f7; border-color:#52627a; }
+    .pa-summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .pa-stat { background:#0b1220; border-radius:9px; padding:12px; overflow-wrap:anywhere; }
+    .pa-stat small { display:block; color:#a8b5c7; margin-bottom:6px; }
+    .pa-stat strong { font-size:19px; }
+    .holding { background:#0b1220; border:1px solid #34445c; border-radius:12px; padding:14px; margin:12px 0; overflow-wrap:anywhere; }
+    .holding-header { display:flex; justify-content:space-between; gap:12px; }
+    .holding-name { font-size:18px; font-weight:bold; }
+    .holding-code { color:#a8b5c7; font-size:13px; }
+    .holding-info { line-height:1.9; margin-top:12px; overflow-wrap:anywhere; }
+    .analysis-score { color:#f5d76e; text-align:right; font-weight:bold; }
+    .positive { color:#55d6a0; } .negative { color:#ff8585; }
+    .pa-note { color:#a8b5c7; font-size:12px; line-height:1.7; }
+    @media(max-width:480px) { .pa-form { grid-template-columns:1fr; } .pa-wrap { padding:10px; } }
   </style>
+  <script src="script.js?v=6" defer></script>
 </head>
-
 <body>
-<main>
+  <main class="pa-wrap">
+    <header class="pa-panel">
+      <h1 style="color:#d4af37">PA-OS</h1>
+      <p>PORTFOLIO AI OPERATING SYSTEM</p>
+      <p class="pa-note">あなたの資産を分析するポートフォリオ管理システム</p>
+    </header>
 
-  <header>
-    <h1>⚔ PA-OS</h1>
-    <div class="subtitle">PORTFOLIO AI OPERATING SYSTEM</div>
-    <div class="subtitle">あなたの資産ギルドを管理する</div>
-  </header>
-
-  <section class="panel">
-    <h2>🏰 ポートフォリオ台帳</h2>
-
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-label">保有銘柄数</div>
-        <div class="stat-value" id="total-holdings">0</div>
+    <section class="pa-panel">
+      <h2>ポートフォリオ全体</h2>
+      <div class="pa-summary">
+        <div class="pa-stat"><small>登録資産数</small><strong id="total-holdings">0</strong></div>
+        <div class="pa-stat"><small>投資元本</small><strong id="total-cost">0円</strong></div>
+        <div class="pa-stat"><small>現在評価額</small><strong id="portfolio-value">未計算</strong></div>
+        <div class="pa-stat"><small>含み損益</small><strong id="open-pl">未計算</strong></div>
+        <div class="pa-stat"><small>損益率</small><strong id="portfolio-return">未計算</strong></div>
+        <div class="pa-stat"><small>データ状況</small><strong id="data-status">入力待ち</strong></div>
       </div>
+    </section>
 
-      <div class="stat">
-        <div class="stat-label">投資元本</div>
-        <div class="stat-value" id="total-cost">¥0</div>
+    <section class="pa-panel">
+      <h2>資産を登録・編集</h2>
+      <form id="holding-form">
+        <div class="pa-form">
+          <div>
+            <label for="stock-type">資産種別</label>
+            <select id="stock-type">
+              <option value="stock">個別株</option>
+              <option value="etf">ETF</option>
+              <option value="fund">投資信託</option>
+            </select>
+          </div>
+          <div>
+            <label for="stock-name">銘柄名 *</label>
+            <input id="stock-name" required placeholder="例：日本精工">
+          </div>
+          <div>
+            <label for="stock-code">銘柄コード・識別名</label>
+            <input id="stock-code" placeholder="例：6471">
+          </div>
+          <div>
+            <label for="stock-shares">保有株数・口数</label>
+            <input id="stock-shares" type="number" min="0" step="any" placeholder="例：100">
+          </div>
+          <div>
+            <label for="stock-cost">取得単価・平均取得基準価額（円）</label>
+            <input id="stock-cost" type="number" min="0" step="any" placeholder="例：1000">
+          </div>
+          <div>
+            <label for="stock-current">現在株価・基準価額（円）</label>
+            <input id="stock-current" type="number" min="0" step="any" placeholder="例：1200">
+          </div>
+          <div>
+            <label for="stock-dividend">配当利回り（%）</label>
+            <input id="stock-dividend" type="number" min="0" step="any" placeholder="例：3.5">
+          </div>
+          <div>
+            <label for="stock-per">PER（倍）</label>
+            <input id="stock-per" type="number" min="0" step="any" placeholder="例：15">
+          </div>
+          <div>
+            <label for="stock-pbr">PBR（倍）</label>
+            <input id="stock-pbr" type="number" min="0" step="any" placeholder="例：1.2">
+          </div>
+          <div>
+            <label for="stock-equity">自己資本比率（%）</label>
+            <input id="stock-equity" type="number" min="0" max="100" step="any" placeholder="例：50">
+          </div>
+          <div>
+            <label for="stock-growth">売上成長率（%）</label>
+            <input id="stock-growth" type="number" step="any" placeholder="例：10">
+          </div>
+          <div>
+            <label for="stock-stability">業績安定度（0〜100）</label>
+            <input id="stock-stability" type="number" min="0" max="100" step="any" placeholder="分析用の任意入力">
+          </div>
+          <div>
+            <label for="stock-risk">リスク水準（0〜100）</label>
+            <input id="stock-risk" type="number" min="0" max="100" step="any" placeholder="高いほど危険">
+          </div>
+        </div>
+        <div class="pa-actions">
+          <button id="add-stock-btn" class="pa-btn" type="submit">＋ 台帳に登録</button>
+          <button id="clear-form-btn" class="pa-btn secondary" type="button">入力クリア</button>
+        </div>
+        <p id="save-status" aria-live="polite">入力待ち</p>
+      </form>
+    </section>
+
+    <section class="pa-panel">
+      <h2>保有資産台帳</h2>
+      <div class="pa-actions">
+        <button id="reload-btn" class="pa-btn secondary" type="button">台帳を再読み込み</button>
+        <button id="ai-analysis-btn" class="pa-btn" type="button">PA-OS分析</button>
+        <button id="delete-all-btn" class="pa-btn secondary" type="button">全削除</button>
       </div>
-    </div>
-  </section>
+      <div id="holdings-list"></div>
+    </section>
 
-  <section class="panel">
-    <h2>📜 銘柄を登録する</h2>
-
-    <div class="form-grid">
-
-      <div class="field full">
-        <label for="stock-name">銘柄名</label>
-        <input id="stock-name" type="text"
-          placeholder="例：トヨタ自動車">
+    <section class="pa-panel">
+      <h2>分析レポート</h2>
+      <p id="test-status" aria-live="polite">起動確認中</p>
+      <div id="ai-analysis-result">
+        登録した資産の分析結果がここに表示されます。
       </div>
-
-      <div class="field">
-        <label for="stock-code">銘柄コード</label>
-        <input id="stock-code" type="text"
-          placeholder="例：7203">
-      </div>
-
-      <div class="field">
-        <label for="stock-shares">保有株数・口数</label>
-        <input id="stock-shares" type="number"
-          min="0" step="any" placeholder="100">
-      </div>
-
-      <div class="field">
-        <label for="stock-cost">取得単価（円）</label>
-        <input id="stock-cost" type="number"
-          min="0" step="any" placeholder="2500">
-      </div>
-
-      <div class="field">
-        <label for="stock-current">現在株価・基準価額（円）</label>
-        <input id="stock-current" type="number"
-          min="0" step="any" placeholder="未入力でも可">
-      </div>
-
-      <div class="field">
-        <label for="stock-dividend">配当利回り（%）</label>
-        <input id="stock-dividend" type="number"
-          min="0" step="any" placeholder="未入力でも可">
-      </div>
-
-      <div class="field">
-        <label for="stock-per">PER</label>
-        <input id="stock-per" type="number"
-          min="0" step="any" placeholder="未入力でも可">
-      </div>
-
-      <div class="field">
-        <label for="stock-pbr">PBR</label>
-        <input id="stock-pbr" type="number"
-          min="0" step="any" placeholder="未入力でも可">
-      </div>
-
-      <div class="field">
-        <label for="stock-equity">自己資本比率（%）</label>
-        <input id="stock-equity" type="number"
-          min="0" max="100" step="any"
-          placeholder="未入力でも可">
-      </div>
-
-      <div class="field">
-        <label for="stock-growth">売上成長率（%）</label>
-        <input id="stock-growth" type="number"
-          step="any" placeholder="未入力でも可">
-      </div>
-
-    </div>
-
-    <p class="help">
-      ※ 現在株価や財務データは、確認できた数値を入力してください。
-      空欄はデータ不足として扱います。
-    </p>
-
-    <div class="action-row">
-      <button id="add-stock-btn" class="primary">
-        ＋ 台帳に登録
-      </button>
-      <button id="clear-form-btn" class="secondary">
-        入力クリア
-      </button>
-    </div>
-
-    <div id="save-status" aria-live="polite"></div>
-  </section>
-
-  <section class="panel">
-    <h2>📊 保有資産一覧</h2>
-
-    <div id="holdings-list">
-      <div class="empty">台帳を読み込み中...</div>
-    </div>
-
-    <div class="action-row">
-      <button id="reload-btn">↻ 台帳再読み込み</button>
-      <button id="delete-all-btn" class="danger">
-        全銘柄削除
-      </button>
-    </div>
-
-    <p id="test-status" class="success" aria-live="polite"></p>
-  </section>
-
-  <section class="panel">
-    <h2>⚔ PA-OS ポートフォリオ分析</h2>
-
-    <p class="help">
-      登録した情報を使って、保有資産の損益と評価を計算します。
-      未入力の項目は推測で採点しません。
-    </p>
-
-    <button id="ai-analysis-btn" class="primary">
-      ポートフォリオAI起動
-    </button>
-
-    <div id="ai-analysis-result" style="margin-top:16px;">
-      <div class="empty">
-        AI起動ボタンを押すと分析結果を表示します。
-      </div>
-    </div>
-  </section>
-
-  <footer>
-    PA-OS · Portfolio AI Operating System<br>
-    分析結果は入力データに基づく参考情報です。
-  </footer>
-
-</main>
-
-<script src="script.js?v=6"></script>
+      <p class="pa-note">
+        評価は入力データに基づく暫定的なルール評価です。
+        未入力データは推測しません。投資成果を保証するものではありません。
+        最新株価・ニュースは自動取得していません。
+      </p>
+    </section>
+  </main>
 </body>
 </html>
